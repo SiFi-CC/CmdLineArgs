@@ -7,10 +7,12 @@
  *
  * Author List:
  *    Volker Hejny                Original author
+ *    Rafa? Lalik                 Modifications, creation of CmdLineArgs library
  *
  * Copyright Information:
- *    Copyright (C) 2002          Institut für Kernphysik
- *                                Forschungszentrum Jülich
+ *    Copyright (C) 2002          Institut fÃ¼r Kernphysik
+ *                                Forschungszentrum JÃ¼lich
+ *    Copyright (C) 2018          Rafa? Lalik
  *
  *****************************************************************************/
 
@@ -34,13 +36,12 @@
 #include <TObjString.h>
 #include <TSystem.h>
 
-// #include "RSEnv.hh"
 #include "CmdLineOption.hh"
 
 ClassImp(CmdLineOption);
 
 TList* CmdLineOption::fgList = 0;
-RSEnv* CmdLineOption::fgEnv = 0;
+TEnv* CmdLineOption::fgEnv = 0;
 
 CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help,
                            Bool_t defval, void (*f)()) {
@@ -557,10 +558,10 @@ void CmdLineOption::ReadCmdLine(int argc, char** argv) {
   }
 };
 
-RSEnv* CmdLineOption::GetEnv() {
+TEnv* CmdLineOption::GetEnv() {
   if (fgEnv != 0) return fgEnv;
 
-  fgEnv = new RSEnv(".sorterrc");
+  fgEnv = new TEnv(".sorterrc");
   TString defaultpath = "";
   if (GetStringValue("DefaultPath")) {
     defaultpath = gSystem->ExpandPathName(GetStringValue("DefaultPath"));

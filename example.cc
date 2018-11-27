@@ -5,14 +5,11 @@
 
 int main(int argc, char ** argv) {
 
-  CmdLineOption mdcspatref("xSpatialResolution","-rresol","MDC spatial resolution in mm" , 0.100);
+  CmdLineOption mdcspatref("CustomArgument", "-custom", "Custom value (float)" , 0.100);
 
-//   CmdLineOption so;
-  gCmdLineConfig->ReadCmdLine(argc, argv);
-  
-//   std::cout << gCmdLineConfig->GetHelp() << std::endl;
+  CmdLineConfig::instance()->ReadCmdLine(argc, argv);
 
-//   gCmdLineConfig->PrintHelp();
+  std::cout << CmdLineOption::GetDoubleValue("CustomArgument") << std::endl;
 
   return 0;
 }

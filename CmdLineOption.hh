@@ -1,16 +1,18 @@
 /******************************************************************************
  *
- * $Id$d
+ * $Id$
  *
  * Environment:
  *    Software development for ANKE detector system at COSY
  *
  * Author List:
  *    Volker Hejny                Original author
+ *    Rafa? Lalik                 Modifications, creation of CmdLineArgs library
  *
  * Copyright Information:
- *    Copyright (C) 2002          Institut für Kernphysik
- *                                Forschungszentrum Jülich
+ *    Copyright (C) 2002          Institut fÃ¼r Kernphysik
+ *                                Forschungszentrum JÃ¼lich
+ *    Copyright (C) 2018          Rafa? Lalik
  *
  *****************************************************************************/
 
@@ -25,16 +27,14 @@
   \date   2002-07-29
 */
 
-#ifndef _SORTEROPTION_HH
-#define _SORTEROPTION_HH
+#ifndef _CMDLINEOPTION_HH
+#define _CMDLINEOPTION_HH
 
 #include "TObject.h"
 #include "TString.h"
-#include "TEnv.h"
 
 class TList;
-// class RSEnv;
-typedef TEnv RSEnv;
+class TEnv;
 
 class CmdLineOption : public TObject {
 public:
@@ -42,13 +42,13 @@ public:
 
   CmdLineOption();
   CmdLineOption(const char* name, const char* cmd, const char* help,
-               Bool_t defval, void (*f)() = 0);
+                Bool_t defval, void (*f)() = 0);
   CmdLineOption(const char* name, const char* cmd, const char* help,
-               Int_t defval, void (*f)() = 0);
+                Int_t defval, void (*f)() = 0);
   CmdLineOption(const char* name, const char* cmd, const char* help,
-               Double_t defval, void (*f)() = 0);
+                Double_t defval, void (*f)() = 0);
   CmdLineOption(const char* name, const char* cmd, const char* help,
-               const char* defval, void (*f)() = 0);
+                const char* defval, void (*f)() = 0);
   CmdLineOption(const char* name, Bool_t defval);
   CmdLineOption(const char* name, Int_t defval);
   CmdLineOption(const char* name, Double_t defval);
@@ -98,7 +98,7 @@ public:
   static const Int_t GetDefaultArraySize(const char* name);
   static const char* GetDefaultStringValue(const char* name);
 
-  static RSEnv* GetEnv();
+  static TEnv* GetEnv();
   static void ReadCmdLine(int argc, char** argv);
   static void PrintHelp();
   static void Print();
@@ -131,7 +131,7 @@ private:
   void (*fFunction)(); // function to be called when changed
 
   static TList* fgList; // list of command line options
-  static RSEnv* fgEnv;  // general rootsorter environment
+  static TEnv* fgEnv;  // general rootsorter environment
 
   ClassDef(CmdLineOption, 0)
 };

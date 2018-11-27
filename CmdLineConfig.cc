@@ -7,10 +7,12 @@
  *
  * Author List:
  *    Volker Hejny                Original author
+ *    Rafa? Lalik                 Modifications, creation of CmdLineArgs library
  *
  * Copyright Information:
- *    Copyright (C) 2002          Institut für Kernphysik
- *                                Forschungszentrum Jülich
+ *    Copyright (C) 2002          Institut fÃ¼r Kernphysik
+ *                                Forschungszentrum JÃ¼lich
+ *    Copyright (C) 2018          Rafa? Lalik
  *
  *****************************************************************************/
 
@@ -22,58 +24,38 @@
 
   \author Volker Hejny
   \date   2002-07-29
+  \author Rafa? Lalik
+  \date   2018-11-27
 */
 
-#include "CmdLineConfig.hh"
-// #include "CConstBase.hh"
-// #include "CLog.hh"
-
-// #include "RSEnv.hh"
-#include "TString.h"
+#include <TEnv.h>
+#include <TString.h>
 
 #include <iostream>
 
+#include "CmdLineConfig.hh"
+
 ClassImp(CmdLineConfig);
-
-static CmdLineOption o1("Name", "-n", "set sorter name", (const char*)0);
-static CmdLineOption o2("Password", "-pw", "set sorter password",
-                        (const char*)0);
-static CmdLineOption o3("Logfile", "-lf", "set logfile name", (const char*)0);
-static CmdLineOption o4("InputFile", "-fin", "set input source", "file:");
-static CmdLineOption o4a("OutputFile", "-fout", "set output destination",
-                         (const char*)0);
-static CmdLineOption o5("RunNumber", "-r", "set run number to use", -1);
-static CmdLineOption o6("ValidSince", "-vs", "set ValidSince manually",
-                        (const char*)0);
-static CmdLineOption o8("AutoAbort", "-abort", "abort analysis after EOF",
-                        kFALSE);
-static CmdLineOption o9("IncludePath", "-incpath", "include path for rc files",
-                        (const char*)0);
-static CmdLineOption o9a("DefaultPath", "-defpath", "default path for rc files",
-                         "~/" /*DEFAULTPATH*/);
-static CmdLineOption o0("Include", "", "", (const char*)0);
-
-static CmdLineOption t1("ServerHost", "", "",
-                        "localhost" /*CConstBase::ServerHost()*/);
-static CmdLineOption t2("ServerPort", "", "",
-                        1234 /*CConstBase::ServerPort()*/);
-
-// TO BE DEFINED IN LOCAL PACKAGES !!!
-//
-// static CmdLineOption t3("SqlUrl"      ,"","","");
-// static CmdLineOption t4("SqlUser"     ,"","","");
-// static CmdLineOption t5("SqlPassword" ,"","","");
 
 static CmdLineOption t6("ParameterDirectory", "", "", "./");
 
 static CmdLineOption datadir("DataDir", "-dd", "Set path to data directory",
                              "./share");
 
-CmdLineConfig* gCmdLineConfig = new CmdLineConfig();
-
 CmdLineConfig::CmdLineConfig(){};
 
 CmdLineConfig::~CmdLineConfig(){};
+
+CmdLineConfig * CmdLineConfig::inst = nullptr;
+
+CmdLineConfig * CmdLineConfig::instance()
+{
+  if (!CmdLineConfig::inst)
+    inst = new CmdLineConfig();
+
+  return inst;
+}
+
 
 void CmdLineConfig::ReadCmdLine(int argc, char** argv) {
   CmdLineOption::ReadCmdLine(argc, argv);

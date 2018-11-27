@@ -7,10 +7,12 @@
  *
  * Author List:
  *    Volker Hejny                Original author
+ *    Rafa? Lalik                 Modifications, creation of CmdLineArgs library
  *
  * Copyright Information:
- *    Copyright (C) 2002          Institut für Kernphysik
- *                                Forschungszentrum Jülich
+ *    Copyright (C) 2002          Institut fÃ¼r Kernphysik
+ *                                Forschungszentrum JÃ¼lich
+ *    Copyright (C) 2018          Rafa? Lalik
  *
  *****************************************************************************/
 
@@ -24,25 +26,27 @@
   \date   2002-07-29
 */
 
-#ifndef _SORTERCONFIG_HH
-#define _SORTERCONFIG_HH
+#ifndef _CMDLINECONFIG_HH
+#define _CMDLINECONFIG_HH
 
-#include <TEnv.h>
 #include <TString.h>
 #include <TSystem.h>
 
 #include "CmdLineOption.hh"
 
-typedef TEnv RSEnv;
+class TEnv;
 
 enum ParameterSource { kSql, kFile, kImportExport, kFileImport };
 
 class CmdLineConfig {
-public:
+protected:
   CmdLineConfig();
   virtual ~CmdLineConfig();
 
-  static void ReadCmdLine(int argc, char** argv);
+public:
+  static CmdLineConfig * instance();
+
+  void ReadCmdLine(int argc, char** argv);
 
   // special treatment for the following parameters are needed
 
@@ -61,9 +65,10 @@ public:
 
 protected:
 private:
+
+  static CmdLineConfig * inst;
+
   ClassDef(CmdLineConfig, 0)
 };
-
-extern CmdLineConfig* gCmdLineConfig;
 
 #endif
