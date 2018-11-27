@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
-project(ComptonCamera6 CXX)
+project(CmdLineArgs CXX)
 string(TOUPPER "${PROJECT_NAME}" CAPS_PROJECT_NAME)
 
 set (VERSION_MAJOR 0)
@@ -23,17 +23,23 @@ include_directories(${ROOT_INCLUDE_DIRS})
 file(GLOB so_SRCS "*.cc")
 file(GLOB so_HDRS "*.hh")
 
-ROOT_GENERATE_DICTIONARY(G__sorter_option_cc ${so_HDRS} LINKDEF LinkDef.h)
+ROOT_GENERATE_DICTIONARY(G__cmdlineargs_cc ${so_HDRS} LINKDEF LinkDef.h)
 
-add_library(SorterOption SHARED ${so_SRCS} G__sorter_option_cc)
-target_link_libraries(SorterOption
+add_library(CmdLineArgs SHARED ${so_SRCS} G__cmdlineargs_cc)
+target_link_libraries(CmdLineArgs
     ${ROOT_LIBRARIES})
 
-set_target_properties(SorterOption PROPERTIES
+include_directories(${CMAKE_SOURCE_DIR})
+
+add_executable(example example.cc)
+target_link_libraries(example
+    CmdLineArgs)
+
+set_target_properties(CmdLineArgs PROPERTIES
     SOVERSION ${PROJECT_VERSION}
     PUBLIC_HEADER "${so_HDRS}"
 )
 
-install(TARGETS SorterOption
+install(TARGETS CmdLineArgs
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

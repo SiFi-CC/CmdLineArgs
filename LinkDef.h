@@ -4,6 +4,7 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class SorterOption;
+#pragma link C++ class CmdLineConfig;
+#pragma link C++ class CmdLineOption;
 
 #endif

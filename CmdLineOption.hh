@@ -15,7 +15,7 @@
  *****************************************************************************/
 
 /*!
-  \file   SorterOption.hh
+  \file   CmdLineOption.hh
   \brief  Defines options, which can be set by command line, .sorterrc and
           default hard-coded value
 
@@ -30,31 +30,33 @@
 
 #include "TObject.h"
 #include "TString.h"
+#include "TEnv.h"
 
 class TList;
-class RSEnv;
+// class RSEnv;
+typedef TEnv RSEnv;
 
-class SorterOption : public TObject {
+class CmdLineOption : public TObject {
 public:
   enum OptionType { kNone, kBool, kInt, kDouble, kString, kStringNotChecked };
 
-  SorterOption();
-  SorterOption(const char* name, const char* cmd, const char* help,
+  CmdLineOption();
+  CmdLineOption(const char* name, const char* cmd, const char* help,
                Bool_t defval, void (*f)() = 0);
-  SorterOption(const char* name, const char* cmd, const char* help,
+  CmdLineOption(const char* name, const char* cmd, const char* help,
                Int_t defval, void (*f)() = 0);
-  SorterOption(const char* name, const char* cmd, const char* help,
+  CmdLineOption(const char* name, const char* cmd, const char* help,
                Double_t defval, void (*f)() = 0);
-  SorterOption(const char* name, const char* cmd, const char* help,
+  CmdLineOption(const char* name, const char* cmd, const char* help,
                const char* defval, void (*f)() = 0);
-  SorterOption(const char* name, Bool_t defval);
-  SorterOption(const char* name, Int_t defval);
-  SorterOption(const char* name, Double_t defval);
-  SorterOption(const char* name, const char* defval);
-  virtual ~SorterOption();
+  CmdLineOption(const char* name, Bool_t defval);
+  CmdLineOption(const char* name, Int_t defval);
+  CmdLineOption(const char* name, Double_t defval);
+  CmdLineOption(const char* name, const char* defval);
+  virtual ~CmdLineOption();
 
-  SorterOption* Expand(TObject* obj);
-  SorterOption* Expand(const TString& s1, const TString& s2);
+  CmdLineOption* Expand(TObject* obj);
+  CmdLineOption* Expand(const TString& s1, const TString& s2);
 
   void CheckCmdLine(int argc, char** argv);
   const char* GetHelp() const;
@@ -101,10 +103,10 @@ public:
   static void PrintHelp();
   static void Print();
 
-  static SorterOption* Find(const char* name);
+  static CmdLineOption* Find(const char* name);
 
 private:
-  SorterOption(const SorterOption& ref);
+  CmdLineOption(const CmdLineOption& ref);
 
   void Init(const char* name, const char* cmd, const char* help);
   Int_t GetValue(const char* name, Int_t def) const;
@@ -131,7 +133,7 @@ private:
   static TList* fgList; // list of command line options
   static RSEnv* fgEnv;  // general rootsorter environment
 
-  ClassDef(SorterOption, 0)
+  ClassDef(CmdLineOption, 0)
 };
 
 #endif
