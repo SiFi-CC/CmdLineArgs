@@ -1,10 +1,13 @@
-cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 project(CmdLineArgs CXX)
 string(TOUPPER "${PROJECT_NAME}" CAPS_PROJECT_NAME)
 
-set (VERSION_MAJOR 0)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
+
+set (VERSION_MAJOR 1)
 set (VERSION_MINOR 0)
-set (VERSION_PATCH 1)
+set (VERSION_PATCH 0)
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
 #--- You need to tell CMake where to find the ROOT installation.
@@ -15,19 +18,21 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/Modules $ENV{ROOT
 find_package(ROOT REQUIRED COMPONENTS Core)
 set(ROOTSYS $ENV{ROOTSYS})
 
-include(GNUInstallDirs)
-
 include(${ROOT_USE_FILE})
 include_directories(${ROOT_INCLUDE_DIRS})
 
-file(GLOB so_SRCS "*.cc")
-file(GLOB so_HDRS "*.hh")
+include(GNUInstallDirs)
 
-ROOT_GENERATE_DICTIONARY(G__cmdlineargs_cc ${so_HDRS} LINKDEF LinkDef.h)
+file(GLOB cmdlineargs_SRCS "*.cc")
+file(GLOB cmdlineargs_HDRS "*.hh")
 
-add_library(CmdLineArgs SHARED ${so_SRCS} G__cmdlineargs_cc)
+
+ROOT_GENERATE_DICTIONARY(G__cmdlineargs_cc ${cmdlineargs_HDRS} LINKDEF LinkDef.h)
+
+add_library(CmdLineArgs SHARED ${cmdlineargs_SRCS} G__cmdlineargs_cc)
 target_link_libraries(CmdLineArgs
-    ${ROOT_LIBRARIES})
+    ${ROOT_LIBRARIES}
+)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
@@ -35,11 +40,71 @@ add_executable(example example.cc)
 target_link_libraries(example
     CmdLineArgs)
 
-set_target_properties(CmdLineArgs PROPERTIES
-    SOVERSION ${PROJECT_VERSION}
-    PUBLIC_HEADER "${so_HDRS}"
+
+target_include_directories(CmdLineArgs PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
 )
 
-install(TARGETS CmdLineArgs
+set_target_properties(CmdLineArgs PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${VERSION_MAJOR}
+    PUBLIC_HEADER "${cmdlineargs_HDRS}"
+    INTERFACE_${CMAKE_PROJECT_NAME}_MAJOR_VERSION ${VERSION_MAJOR}
+)
+
+set_property(TARGET CmdLineArgs APPEND PROPERTY
+  COMPATIBLE_INTERFACE_STRING ${CMAKE_PROJECT_NAME}_MAJOR_VERSION
+)
+
+install(TARGETS CmdLineArgs EXPORT ${CMAKE_PROJECT_NAME}Targets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+
+# Export the package for use from the build-tree
+# (this registers the build-tree with a global CMake-registry)
+export(PACKAGE ${CMAKE_PROJECT_NAME})
+
+##### set paths
+if(WIN32 AND NOT CYGWIN)
+    set(DEF_CMAKE_INSTALL_CMAKEDIR cmake)
+else()
+    set(DEF_CMAKE_INSTALL_CMAKEDIR ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME})
+endif()
+set(CMAKE_INSTALL_CMAKEDIR ${DEF_CMAKE_INSTALL_CMAKEDIR} CACHE PATH "Installation directory for CMake files")
+
+# packaging
+
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+    ${CMAKE_PROJECT_NAME}ConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
+
+export(EXPORT ${CMAKE_PROJECT_NAME}Targets
+    FILE ${CMAKE_PROJECT_NAME}/${CMAKE_PROJECT_NAME}Targets.cmake
+)
+configure_file(
+    cmake/${CMAKE_PROJECT_NAME}Config.cmake
+    ${CMAKE_PROJECT_NAME}Config.cmake
+    COPYONLY
+)
+
+install(EXPORT ${CMAKE_PROJECT_NAME}Targets
+    FILE ${CMAKE_PROJECT_NAME}Targets.cmake
+    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+)
+
+install(
+    FILES
+        ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake
+        ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}ConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+    COMPONENT Devel
+)
