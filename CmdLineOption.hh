@@ -33,8 +33,12 @@
 #include "TObject.h"
 #include "TString.h"
 
+#include <vector>
+
 class TList;
 class TEnv;
+
+typedef std::vector<TString> PositionalArgs;
 
 class CmdLineOption : public TObject {
 public:
@@ -58,7 +62,8 @@ public:
   CmdLineOption* Expand(TObject* obj);
   CmdLineOption* Expand(const TString& s1, const TString& s2);
 
-  void CheckCmdLine(int argc, char** argv);
+  static void CheckCmdLine(int argc, char** argv);
+  static Bool_t CheckCmdLineSpecial(int argc, char ** argv, int i);
   const char* GetHelp() const;
 
   const Bool_t GetBoolValue() const;
@@ -98,6 +103,8 @@ public:
   static const Int_t GetDefaultArraySize(const char* name);
   static const char* GetDefaultStringValue(const char* name);
 
+  static const std::vector<TString> & GetPositionalArguments() { return fgPositional; }
+
   static TEnv* GetEnv();
   static void ReadCmdLine(int argc, char** argv);
   static void PrintHelp();
@@ -132,6 +139,7 @@ private:
 
   static TList* fgList; // list of command line options
   static TEnv* fgEnv;  // general rootsorter environment
+  static std::vector<TString> fgPositional; // list of positional arguments
 
   ClassDef(CmdLineOption, 0)
 };

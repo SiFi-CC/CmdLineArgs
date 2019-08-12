@@ -42,6 +42,7 @@ ClassImp(CmdLineOption);
 
 TList* CmdLineOption::fgList = 0;
 TEnv* CmdLineOption::fgEnv = 0;
+std::vector<TString> CmdLineOption::fgPositional;
 
 CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help,
                            Bool_t defval, void (*f)()) {
@@ -184,16 +185,88 @@ void CmdLineOption::Init(const char* name, const char* cmd, const char* help) {
 
 void CmdLineOption::CheckCmdLine(int argc, char** argv) {
   if (argc < 2) return;
+
+  if (fgList == 0) return;
+
+  CmdLineOption* entry = nullptr;
+
   for (Int_t i = 1; i < argc; i++) {
-    if (fCmdArg == argv[i]) {
-      if (fType == kBool)
-        GetEnv()->SetValue("CmdLine." + fName, 1);
-      else if (i < argc - 1)
-        GetEnv()->SetValue("CmdLine." + fName, argv[i + 1]);
-      if (fFunction != 0) (*fFunction)();
+    Bool_t isCmdLine = kFALSE;
+    if (CheckCmdLineSpecial(argc, argv, i)) continue;
+
+    TIter it(fgList);
+    while ((entry = dynamic_cast<CmdLineOption*>(it()))) {
+      if (entry->fCmdArg == "") continue;
+
+      if (entry->fCmdArg == argv[i]) {
+        isCmdLine = kTRUE;
+        if (entry->fType == kBool)
+          GetEnv()->SetValue("CmdLine." + entry->fName, 1);
+        else if (i < argc - 1)
+          GetEnv()->SetValue("CmdLine." + entry->fName, argv[++i]);
+        if (entry->fFunction != 0) (*entry->fFunction)();
+        break;
+      }
     }
+
+    if (!isCmdLine)
+      fgPositional.push_back(argv[i]);
   }
 };
+
+Bool_t CmdLineOption::CheckCmdLineSpecial(int argc, char ** argv, int i) {
+    TString option = argv[i];
+    if (option == "-h") {
+      std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
+      std::cout << "  -h                  show this help" << std::endl;
+      PrintHelp();
+      exit(0);
+      return kTRUE;
+    } else if (option == "-p") {
+      Print();
+      return kTRUE;
+    } else if (option == "-extra-sorterrc") {
+      if ((i + 1) < argc) {
+        TString includepath = "";
+        if (GetStringValue("IncludePath")) {
+          includepath = gSystem->ExpandPathName(GetStringValue("IncludePath"));
+          if (!(includepath.EndsWith("/"))) includepath += "/";
+        }
+        TString extrafile = argv[i + 1];
+        TString extra = gSystem->ExpandPathName(extrafile.Data());
+        if (!(extra.BeginsWith("/") || extra.BeginsWith("./"))) {
+          extra = includepath + extra;
+        }
+        if (gSystem->AccessPathName(extra)) {
+          std::cout << "Error: extra rc path not accessible (" << extra << ")"
+                  << std::endl;
+          exit(0);
+        } else {
+          void* dirp = gSystem->OpenDirectory(extra);
+          if (dirp == 0) {
+            std::cout
+                << "Reading extra rc file: " << extra << std::endl;
+            fgEnv->ReadFile(extra, kEnvChange);
+          } else {
+            if (!extra.EndsWith("/")) extra += "/";
+            const char* localname = 0;
+            while ((localname = gSystem->GetDirEntry(dirp))) {
+              TString strName = localname;
+              if (strName.EndsWith(".rc")) {
+                std::cout
+                    << "Reading extra fc file: " << extra + strName
+                    << std::endl;
+                fgEnv->ReadFile(extra + strName, kEnvChange);
+              }
+            }
+            gSystem->FreeDirectory(dirp);
+          }
+        }
+      }
+      return kTRUE;
+    } // end extra sorterrc
+    return kFALSE;
+}
 
 const Int_t CmdLineOption::GetArraySizeFromString(const TString arraystring) {
   TString delim = ": ";
@@ -500,62 +573,7 @@ void CmdLineOption::Print() {
 
 void CmdLineOption::ReadCmdLine(int argc, char** argv) {
   GetEnv();
-  if (fgList == 0) return;
-  TIter it(fgList);
-  CmdLineOption* entry;
-  while ((entry = dynamic_cast<CmdLineOption*>(it()))) {
-    if (entry->fCmdArg == "") continue;
-    entry->CheckCmdLine(argc, argv);
-  }
-  for (Int_t i = 1; i < argc; i++) {
-    TString option = argv[i];
-    if (option == "-h") {
-      std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
-      std::cout << "  -h                  show this help" << std::endl;
-      PrintHelp();
-      exit(0);
-    } else if (option == "-p") {
-      Print();
-    } else if (option == "-extra-sorterrc") {
-      if ((i + 1) < argc) {
-        TString includepath = "";
-        if (GetStringValue("IncludePath")) {
-          includepath = gSystem->ExpandPathName(GetStringValue("IncludePath"));
-          if (!(includepath.EndsWith("/"))) includepath += "/";
-        }
-        TString extrafile = argv[i + 1];
-        TString extra = gSystem->ExpandPathName(extrafile.Data());
-        if (!(extra.BeginsWith("/") || extra.BeginsWith("./"))) {
-          extra = includepath + extra;
-        }
-        if (gSystem->AccessPathName(extra)) {
-          std::cout << "Error: extra rc path not accessible (" << extra << ")"
-                  << std::endl;
-          exit(0);
-        } else {
-          void* dirp = gSystem->OpenDirectory(extra);
-          if (dirp == 0) {
-            std::cout
-                << "Reading extra rc file: " << extra << std::endl;
-            fgEnv->ReadFile(extra, kEnvChange);
-          } else {
-            if (!extra.EndsWith("/")) extra += "/";
-            const char* localname = 0;
-            while ((localname = gSystem->GetDirEntry(dirp))) {
-              TString strName = localname;
-              if (strName.EndsWith(".rc")) {
-                std::cout
-                    << "Reading extra fc file: " << extra + strName
-                    << std::endl;
-                fgEnv->ReadFile(extra + strName, kEnvChange);
-              }
-            }
-            gSystem->FreeDirectory(dirp);
-          }
-        }
-      }
-    } // end extra sorterrc
-  }
+  CheckCmdLine(argc, argv);
 };
 
 TEnv* CmdLineOption::GetEnv() {
