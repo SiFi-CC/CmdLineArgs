@@ -43,9 +43,9 @@ Define the options in the beginning of the ```main``` function or the global sco
 
 ## Access positional arguments:
 
-    PositionalArguments pargs = CmdLineOption::GetPositionalArguments();
+    PositionalArgs pargs = CmdLineOption::GetPositionalArguments();
 
-Since ```PositionalArguments``` is a typedef of ```std::vector<TString>``` all ```std::vector``` members apply to it, like:
+Since ```PositionalArgs``` is a typedef of ```std::vector<TString>``` all ```std::vector``` members apply to it, like:
 
     pargs.size()
 

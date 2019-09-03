@@ -40,6 +40,8 @@ add_executable(example example.cc)
 target_link_libraries(example
     CmdLineArgs)
 
+enable_testing()
+add_subdirectory(tests)
 
 target_include_directories(CmdLineArgs PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
