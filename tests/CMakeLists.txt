@@ -8,6 +8,19 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib)
 add_executable(UnitTester test_runner.cpp ${UnitTests_SRCS})
 target_link_libraries(UnitTester CmdLineArgs ${CPPUNIT_LIBRARIES})
 
+set(COVERAGE OFF CACHE BOOL "Coverage support")
+set(COVERAGE_COMPILER_FLAGS "-g --coverage -fprofile-arcs -ftest-coverage"
+    CACHE INTERNAL "")
+
+if (COVERAGE)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COVERAGE_COMPILER_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COVERAGE_COMPILER_FLAGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}" PARENT_SCOPE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" PARENT_SCOPE)
+
+    message(STATUS "Appending code coverage compiler flags: ${COVERAGE_COMPILER_FLAGS}")
+endif()
+
 foreach(test ${UnitTests_SRCS})
     file(READ ${test} test_file)
     string(REGEX MATCH "CPPUNIT_TEST_SUITE\(.([A-Za-z0-9 ]+).\)" _ ${test_file})

@@ -23,8 +23,8 @@ include_directories(${ROOT_INCLUDE_DIRS})
 
 include(GNUInstallDirs)
 
-file(GLOB cmdlineargs_SRCS "*.cc")
-file(GLOB cmdlineargs_HDRS "*.hh")
+file(GLOB cmdlineargs_SRCS "Cmd*.cc")
+file(GLOB cmdlineargs_HDRS "Cmd*.hh")
 
 
 ROOT_GENERATE_DICTIONARY(G__cmdlineargs_cc ${cmdlineargs_HDRS} LINKDEF LinkDef.h)
@@ -39,6 +39,7 @@ include_directories(${CMAKE_SOURCE_DIR})
 add_executable(example example.cc)
 target_link_libraries(example
     CmdLineArgs)
+#add_executable(UnitTester test_runner.cpp)
 
 enable_testing()
 add_subdirectory(tests)

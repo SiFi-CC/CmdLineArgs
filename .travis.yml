@@ -12,7 +12,12 @@ before_script:
     - . ./.aux_deps/root/bin/thisroot.sh
     - mkdir build
     - cd build
-    - cmake ..
+    - cmake .. -DCOVERAGE=1
 script:
     - make
     - make test
+before_install:
+    - pip install --user cpp-coveralls
+after_success:
+    - cd ..
+    - coveralls -r . -b build -E ".*/build/.*" -E ".*/tests/.*" --gcov-options "\-lp"
