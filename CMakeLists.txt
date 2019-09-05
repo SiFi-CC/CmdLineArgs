@@ -34,7 +34,7 @@ include(c++-standards)
 include(code-coverage)
 include(sanitizers)
 
-cxx_17()
+cxx_11()
 add_code_coverage()
 
 ROOT_GENERATE_DICTIONARY(G__cmdlineargs_cc ${cmdlineargs_HDRS} LINKDEF LinkDef.h)
