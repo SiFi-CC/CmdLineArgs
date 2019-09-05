@@ -45,6 +45,14 @@ std::vector<TString> CmdLineOption::fgPositional;
 const TString CmdLineOption::delim = ": ,";
 
 CmdLineOption::CmdLineOption(const char* name, const char* cmd,
+                             const char* help, void (*f)()) {
+  Init(name, cmd, help);
+  fDefInt = kFALSE;
+  fType = kFlag;
+  fFunction = f;
+}
+
+CmdLineOption::CmdLineOption(const char* name, const char* cmd,
                              const char* help, Bool_t defval, void (*f)()) {
   Init(name, cmd, help);
   fDefInt = (defval == kTRUE ? 1 : 0);
@@ -76,6 +84,9 @@ CmdLineOption::CmdLineOption(const char* name, const char* cmd,
   fType = kStringNotChecked;
   fFunction = f;
 }
+
+CmdLineOption::CmdLineOption(const char* name)
+    : CmdLineOption(name, 0, 0, kFALSE, nullptr) {}
 
 CmdLineOption::CmdLineOption(const char* name, Bool_t defval)
     : CmdLineOption(name, 0, 0, defval, nullptr) {}
@@ -136,6 +147,9 @@ CmdLineOption* CmdLineOption::Expand(const TString& cname,
   CmdLineOption* newopt = Find(newname);
   if (newopt != 0) return newopt;
   switch (fType) {
+    case kFlag:
+      newopt = new CmdLineOption(newname, kFALSE);
+      break;
     case kBool:
       newopt = new CmdLineOption(newname, (Bool_t)fDefInt);
       break;
@@ -207,7 +221,9 @@ void CmdLineOption::CheckCmdLine(int argc, char** argv) {
 
       if (entry->fCmdArg == argv[i]) {
         isCmdLine = kTRUE;
-        if (i < argc - 1)
+        if (entry->fType == kFlag)
+          GetEnv()->SetValue("CmdLine." + entry->fName, kTRUE);
+        else if (i < argc - 1)
           GetEnv()->SetValue("CmdLine." + entry->fName, argv[++i]);
         if (entry->fFunction != 0) (*entry->fFunction)();
         break;
@@ -307,6 +323,14 @@ CmdLineOption::GetDoubleArrayValueFromString(const TString arraystring,
 
 const char* CmdLineOption::GetHelp() const { return fHelp.Data(); };
 
+const Bool_t CmdLineOption::GetFlagValue() const {
+  if (fType != kFlag)
+    std::cerr << "CmdLineOption: " << fName << " not defined as flag! "
+              << std::endl;
+  if (GetValue("CmdLine." + fName, kFALSE) == 1) return kTRUE;
+  return kFALSE;
+}
+
 const Bool_t CmdLineOption::GetBoolValue() const {
   if (fType != kBool)
     std::cerr << "CmdLineOption: " << fName << " not defined as bool! "
@@ -323,8 +347,7 @@ const Int_t CmdLineOption::GetIntValue() const {
 }
 
 const Int_t CmdLineOption::GetIntArrayValue(const Int_t index) {
-
-  const TString arraystring = GetStringValue();
+  const TString arraystring = GetStringValue(kTRUE);
   return GetIntArrayValueFromString(arraystring, index);
 }
 
@@ -336,17 +359,16 @@ const Double_t CmdLineOption::GetDoubleValue() const {
 }
 
 const Double_t CmdLineOption::GetDoubleArrayValue(const Int_t index) {
-
-  const TString arraystring = GetStringValue();
+  const TString arraystring = GetStringValue(kTRUE);
   return GetDoubleArrayValueFromString(arraystring, index);
 }
 
 const Int_t CmdLineOption::GetArraySize() {
-  const TString arraystring = GetStringValue();
+  const TString arraystring = GetStringValue(kTRUE);
   return GetArraySizeFromString(arraystring);
 }
 
-const char* CmdLineOption::GetStringValue() {
+const char* CmdLineOption::GetStringValue(Bool_t arrayParsing) {
   if (fType == kStringNotChecked) {
     const char* envVal = GetEnv()->GetValue("CmdLine." + fName, (const char*)0);
     if (envVal != 0) {
@@ -356,7 +378,7 @@ const char* CmdLineOption::GetStringValue() {
     }
     fType = kString;
   }
-  if (fType != kString)
+  if (!arrayParsing and fType != kString)
     std::cerr << "CmdLineOption: " << fName << " not defined as char*!"
               << std::endl;
   if (fDefString.IsNull())
@@ -380,7 +402,7 @@ const Int_t CmdLineOption::GetDefaultIntValue() const {
 }
 
 const Int_t CmdLineOption::GetDefaultIntArrayValue(const Int_t index) {
-  const TString arraystring = GetDefaultStringValue();
+  const TString arraystring = GetDefaultStringValue(kTRUE);
   return GetIntArrayValueFromString(arraystring, index);
 }
 
@@ -392,23 +414,29 @@ const Double_t CmdLineOption::GetDefaultDoubleValue() const {
 }
 
 const Double_t CmdLineOption::GetDefaultDoubleArrayValue(const Int_t index) {
-  const TString arraystring = GetDefaultStringValue();
+  const TString arraystring = GetDefaultStringValue(kTRUE);
   return GetDoubleArrayValueFromString(arraystring, index);
 }
 
 const Int_t CmdLineOption::GetDefaultArraySize() {
-  const TString arraystring = GetDefaultStringValue();
+  const TString arraystring = GetDefaultStringValue(kTRUE);
   return GetArraySizeFromString(arraystring);
 }
 
-const char* CmdLineOption::GetDefaultStringValue() const {
-  if (fType != kString && fType != kStringNotChecked)
+const char* CmdLineOption::GetDefaultStringValue(Bool_t arrayparsing) const {
+  if (!arrayparsing and fType != kString && fType != kStringNotChecked)
     std::cerr << "CmdLineOption: " << fName << " not defined as char*!"
               << std::endl;
   if (fDefString.IsNull())
     return (const char*)nullptr;
   else
     return fDefString.Data();
+}
+
+const Bool_t CmdLineOption::GetFlagValue(const char* name) {
+  CmdLineOption* entry = Find(name);
+  if (entry) return entry->GetFlagValue();
+  return kFALSE;
 }
 
 const Bool_t CmdLineOption::GetBoolValue(const char* name) {
@@ -509,6 +537,9 @@ void CmdLineOption::PrintHelp() {
               << setiosflags(std::ios::left) << std::setw(20) << entry->fCmdArg
               << entry->fHelp << resetiosflags(std::ios::adjustfield);
     switch (entry->fType) {
+      case kFlag:
+        std::cout << " (flag)";
+        break;
       case kBool:
         std::cout << " (bool)";
         break;
@@ -539,6 +570,13 @@ void CmdLineOption::Print() {
     std::cout << "  " << resetiosflags(std::ios::adjustfield)
               << setiosflags(std::ios::left) << std::setw(20) << entry->fName;
     switch (entry->fType) {
+      case kFlag:
+        if (entry->GetFlagValue())
+          std::cout << "YES";
+        else
+          std::cout << "NO";
+        std::cout << " (bool)";
+        break;
       case kBool:
         if (entry->GetBoolValue())
           std::cout << "kTRUE";

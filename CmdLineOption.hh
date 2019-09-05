@@ -42,9 +42,11 @@ typedef std::vector<TString> PositionalArgs;
 
 class CmdLineOption : public TObject {
 public:
-  enum OptionType { kNone, kBool, kInt, kDouble, kString, kStringNotChecked };
+  enum OptionType { kNone, kFlag, kBool, kInt, kDouble, kString, kStringNotChecked };
 
   CmdLineOption();
+  CmdLineOption(const char* name, const char* cmd, const char* help,
+                void (*f)() = 0);
   CmdLineOption(const char* name, const char* cmd, const char* help,
                 Bool_t defval, void (*f)() = 0);
   CmdLineOption(const char* name, const char* cmd, const char* help,
@@ -63,13 +65,14 @@ public:
   static Bool_t CheckCmdLineSpecial(int argc, char** argv, int i);
   const char* GetHelp() const;
 
+  const Bool_t GetFlagValue() const;
   const Bool_t GetBoolValue() const;
   const Int_t GetIntValue() const;
   const Int_t GetIntArrayValue(const Int_t index);
   const Double_t GetDoubleValue() const;
   const Double_t GetDoubleArrayValue(const Int_t index);
   const Int_t GetArraySize();
-  const char* GetStringValue();
+  const char* GetStringValue(Bool_t arrayParsing = kFALSE);
 
   const Bool_t GetDefaultBoolValue() const;
   const Int_t GetDefaultIntValue() const;
@@ -78,9 +81,9 @@ public:
   const Double_t GetDefaultDoubleValue() const;
   const Double_t GetDefaultDoubleArrayValue(const Int_t index);
   const Int_t GetDefaultArraySize();
+  const char* GetDefaultStringValue(Bool_t arrayParsing = kFALSE) const;
 
-  const char* GetDefaultStringValue() const;
-
+  static const Bool_t GetFlagValue(const char* name);
   static const Bool_t GetBoolValue(const char* name);
   static const Int_t GetIntValue(const char* name);
   static const Int_t GetIntArrayValue(const char* name, const Int_t index);
@@ -113,6 +116,7 @@ public:
   static CmdLineOption* Find(const char* name);
 
 private:
+  CmdLineOption(const char* name);
   CmdLineOption(const char* name, Bool_t defval);
   CmdLineOption(const char* name, Int_t defval);
   CmdLineOption(const char* name, Double_t defval);

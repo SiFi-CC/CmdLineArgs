@@ -17,6 +17,7 @@ class BasicCase : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE_END();
 
 private:
+  CmdLineOption* flag_val;
   CmdLineOption* bool_val;
   CmdLineOption* int_val;
   CmdLineOption* double_val;
@@ -24,6 +25,7 @@ private:
 
 public:
   virtual void setUp() override {
+    flag_val = new CmdLineOption("FlagArg", "-flag", "Flag Help message");
     bool_val =
         new CmdLineOption("BoolArg", "-bool", "Bool Help message", false);
     int_val = new CmdLineOption("IntegerArg", "-int", "Int Help message", 13);
@@ -36,6 +38,8 @@ public:
 
 protected:
   void Principles() {
+    CPPUNIT_ASSERT_EQUAL(std::string("Flag Help message"),
+                         std::string(flag_val->GetHelp()));
     CPPUNIT_ASSERT_EQUAL(std::string("Bool Help message"),
                          std::string(bool_val->GetHelp()));
     CPPUNIT_ASSERT_EQUAL(std::string("Int Help message"),
@@ -49,6 +53,20 @@ protected:
   }
 
   void SingleParams() {
+    {
+      const char* argv[] = {"./prog"};
+      CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
+                                             (char**)argv);
+      CPPUNIT_ASSERT_EQUAL(false, CmdLineOption::GetFlagValue("FlagArg"));
+    }
+
+    {
+      const char* argv[] = {"./prog", "-flag"};
+      CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
+                                             (char**)argv);
+      CPPUNIT_ASSERT_EQUAL(true, CmdLineOption::GetFlagValue("FlagArg"));
+    }
+
     {
       const char* argv[] = {"./prog", "-bool", "1"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
@@ -125,11 +143,14 @@ protected:
 
   void ComplexParams() {
     {
-      const char* argv[] = {"./prog", "-bool",   "1",           "positional1",
-                            "-int",   "112358",  "positional2", "-double",
-                            "2.71",   "-string", "test string", "positional3"};
+      const char* argv[] = {"./prog",      "-flag", "-bool",   "1",
+                            "positional1", "-int",  "112358",  "positional2",
+                            "-double",     "2.71",  "-string", "test string",
+                            "positional3"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
+
+      CPPUNIT_ASSERT_EQUAL(true, CmdLineOption::GetFlagValue("FlagArg"));
       CPPUNIT_ASSERT_EQUAL(true, CmdLineOption::GetBoolValue("BoolArg"));
       CPPUNIT_ASSERT_EQUAL(112358, CmdLineOption::GetIntValue("IntegerArg"));
       CPPUNIT_ASSERT_EQUAL(2.71, CmdLineOption::GetDoubleValue("DoubleArg"));
@@ -137,6 +158,7 @@ protected:
           std::string("test string"),
           std::string(CmdLineOption::GetStringValue("StringArg")));
 
+      CPPUNIT_ASSERT_EQUAL(true, flag_val->GetFlagValue());
       CPPUNIT_ASSERT_EQUAL(true, bool_val->GetBoolValue());
       CPPUNIT_ASSERT_EQUAL(112358, int_val->GetIntValue());
       CPPUNIT_ASSERT_EQUAL(2.71, double_val->GetDoubleValue());
@@ -151,12 +173,14 @@ protected:
     }
 
     {
-      const char* argv[] = {"./prog",      "-bool",      "0",
-                            "positional1", "-int",       "positional2",
-                            "-double",     "2.71",       "-string",
-                            "test string", "positional3"};
+      const char* argv[] = {"./prog",      "-flag",       "-bool",
+                            "0",           "positional1", "-int",
+                            "positional2", "-double",     "2.71",
+                            "-string",     "test string", "positional3"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
+
+      CPPUNIT_ASSERT_EQUAL(true, CmdLineOption::GetFlagValue("FlagArg"));
       CPPUNIT_ASSERT_EQUAL(false, CmdLineOption::GetBoolValue("BoolArg"));
       CPPUNIT_ASSERT_EQUAL(13, CmdLineOption::GetIntValue("IntegerArg"));
       CPPUNIT_ASSERT_EQUAL(2.71, CmdLineOption::GetDoubleValue("DoubleArg"));
@@ -178,6 +202,7 @@ protected:
                                              (char**)argv);
     }
 
+    CPPUNIT_ASSERT_EQUAL(false, CmdLineOption::GetFlagValue("FlagArg"));
     CPPUNIT_ASSERT_EQUAL(false, CmdLineOption::GetBoolValue("BoolArg"));
     CPPUNIT_ASSERT_EQUAL(13, CmdLineOption::GetIntValue("IntegerArg"));
     CPPUNIT_ASSERT_EQUAL(3.1415, CmdLineOption::GetDoubleValue("DoubleArg"));
@@ -185,21 +210,31 @@ protected:
         std::string("pi"),
         std::string(CmdLineOption::GetStringValue("StringArg")));
 
+    CPPUNIT_ASSERT_EQUAL(false, flag_val->GetFlagValue());
+    CPPUNIT_ASSERT_EQUAL(false, flag_val->GetBoolValue());
+    CPPUNIT_ASSERT_EQUAL(0, flag_val->GetIntValue());
+    CPPUNIT_ASSERT_EQUAL(0.0, flag_val->GetDoubleValue());
+    CPPUNIT_ASSERT_EQUAL((char*)nullptr, (char*)flag_val->GetStringValue());
+
+    CPPUNIT_ASSERT_EQUAL(false, bool_val->GetFlagValue());
     CPPUNIT_ASSERT_EQUAL(false, bool_val->GetBoolValue());
     CPPUNIT_ASSERT_EQUAL(0, bool_val->GetIntValue());
     CPPUNIT_ASSERT_EQUAL(0.0, bool_val->GetDoubleValue());
     CPPUNIT_ASSERT_EQUAL((char*)nullptr, (char*)bool_val->GetStringValue());
 
+    CPPUNIT_ASSERT_EQUAL(false, int_val->GetFlagValue());
     CPPUNIT_ASSERT_EQUAL(false, int_val->GetBoolValue());
     CPPUNIT_ASSERT_EQUAL(13, int_val->GetIntValue());
     CPPUNIT_ASSERT_EQUAL(0.0, int_val->GetDoubleValue());
     CPPUNIT_ASSERT_EQUAL((char*)nullptr, (char*)int_val->GetStringValue());
 
+    CPPUNIT_ASSERT_EQUAL(false, double_val->GetFlagValue());
     CPPUNIT_ASSERT_EQUAL(false, double_val->GetBoolValue());
     CPPUNIT_ASSERT_EQUAL(0, double_val->GetIntValue());
     CPPUNIT_ASSERT_EQUAL(3.1415, double_val->GetDoubleValue());
     CPPUNIT_ASSERT_EQUAL((char*)nullptr, (char*)double_val->GetStringValue());
 
+    CPPUNIT_ASSERT_EQUAL(false, string_val->GetFlagValue());
     CPPUNIT_ASSERT_EQUAL(false, string_val->GetBoolValue());
     CPPUNIT_ASSERT_EQUAL(0, string_val->GetIntValue());
     CPPUNIT_ASSERT_EQUAL(0.0, string_val->GetDoubleValue());
