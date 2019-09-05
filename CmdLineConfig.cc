@@ -44,16 +44,13 @@ CmdLineConfig::CmdLineConfig(){};
 
 CmdLineConfig::~CmdLineConfig(){};
 
-CmdLineConfig * CmdLineConfig::inst = nullptr;
+CmdLineConfig* CmdLineConfig::inst = nullptr;
 
-CmdLineConfig * CmdLineConfig::instance()
-{
-  if (!CmdLineConfig::inst)
-    inst = new CmdLineConfig();
+CmdLineConfig* CmdLineConfig::instance() {
+  if (!CmdLineConfig::inst) inst = new CmdLineConfig();
 
   return inst;
 }
-
 
 void CmdLineConfig::ReadCmdLine(int argc, char** argv) {
   CmdLineOption::ReadCmdLine(argc, argv);

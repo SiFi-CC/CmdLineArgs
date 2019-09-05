@@ -44,49 +44,50 @@ TEnv* CmdLineOption::fgEnv = 0;
 std::vector<TString> CmdLineOption::fgPositional;
 const TString CmdLineOption::delim = ": ,";
 
-CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help,
-                           Bool_t defval, void (*f)()) {
+CmdLineOption::CmdLineOption(const char* name, const char* cmd,
+                             const char* help, Bool_t defval, void (*f)()) {
   Init(name, cmd, help);
   fDefInt = (defval == kTRUE ? 1 : 0);
   fType = kBool;
   fFunction = f;
 }
 
-CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help,
-                           Int_t defval, void (*f)()) {
+CmdLineOption::CmdLineOption(const char* name, const char* cmd,
+                             const char* help, Int_t defval, void (*f)()) {
   Init(name, cmd, help);
   fDefInt = defval;
   fType = kInt;
   fFunction = f;
 }
 
-CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help,
-                           Double_t defval, void (*f)()) {
+CmdLineOption::CmdLineOption(const char* name, const char* cmd,
+                             const char* help, Double_t defval, void (*f)()) {
   Init(name, cmd, help);
   fDefDouble = defval;
   fType = kDouble;
   fFunction = f;
 }
 
-CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help,
-                           const char* defval, void (*f)()) {
+CmdLineOption::CmdLineOption(const char* name, const char* cmd,
+                             const char* help, const char* defval,
+                             void (*f)()) {
   Init(name, cmd, help);
   fDefString = defval;
   fType = kStringNotChecked;
   fFunction = f;
 }
 
-CmdLineOption::CmdLineOption(const char* name, Bool_t defval) : CmdLineOption(name, 0, 0, defval, nullptr) {
-}
+CmdLineOption::CmdLineOption(const char* name, Bool_t defval)
+    : CmdLineOption(name, 0, 0, defval, nullptr) {}
 
-CmdLineOption::CmdLineOption(const char* name, Int_t defval) : CmdLineOption(name, 0, 0, defval, nullptr) {
-}
+CmdLineOption::CmdLineOption(const char* name, Int_t defval)
+    : CmdLineOption(name, 0, 0, defval, nullptr) {}
 
-CmdLineOption::CmdLineOption(const char* name, Double_t defval) : CmdLineOption(name, 0, 0, defval, nullptr) {
-}
+CmdLineOption::CmdLineOption(const char* name, Double_t defval)
+    : CmdLineOption(name, 0, 0, defval, nullptr) {}
 
-CmdLineOption::CmdLineOption(const char* name, const char* defval) : CmdLineOption(name, 0, 0, defval, nullptr) {
-}
+CmdLineOption::CmdLineOption(const char* name, const char* defval)
+    : CmdLineOption(name, 0, 0, defval, nullptr) {}
 
 CmdLineOption::CmdLineOption(const CmdLineOption& ref) {
   MayNotUse("CmdLineOption(const CmdLineOption& ref)");
@@ -95,23 +96,21 @@ CmdLineOption::CmdLineOption(const CmdLineOption& ref) {
 CmdLineOption::CmdLineOption() { Init(0, 0, 0); };
 
 CmdLineOption::~CmdLineOption() {
-  TObject * obj = GetEnv()->Lookup("CmdLine." +  fName);
+  TObject* obj = GetEnv()->Lookup("CmdLine." + fName);
   if (obj) GetEnv()->GetTable()->Remove(obj);
 
   if (!fName.IsNull()) fgList->Remove(this);
 }
 
-void CmdLineOption::ClearOptions()
-{
-    for (int i = fgList->GetEntries(); i > 2; --i)
-    {
-        TObject * obj =  fgList->Last();
-        fgList->RemoveLast();
-        delete obj;
-        obj = nullptr;
-    }
+void CmdLineOption::ClearOptions() {
+  for (int i = fgList->GetEntries(); i > 2; --i) {
+    TObject* obj = fgList->Last();
+    fgList->RemoveLast();
+    delete obj;
+    obj = nullptr;
+  }
 
-    fgPositional.clear();
+  fgPositional.clear();
 }
 
 CmdLineOption* CmdLineOption::Find(const char* name) {
@@ -131,7 +130,8 @@ CmdLineOption* CmdLineOption::Expand(TObject* obj) {
   return Expand(cname, name);
 }
 
-CmdLineOption* CmdLineOption::Expand(const TString& cname, const TString& name) {
+CmdLineOption* CmdLineOption::Expand(const TString& cname,
+                                     const TString& name) {
   TString newname = cname + "." + name + "." + fName;
   CmdLineOption* newopt = Find(newname);
   if (newopt != 0) return newopt;
@@ -168,8 +168,8 @@ void CmdLineOption::Init(const char* name, const char* cmd, const char* help) {
   if (fName.IsNull()) return;
 
   if (fgList == 0) {
-      fgList = new TList();
-      fgList->SetOwner();
+    fgList = new TList();
+    fgList->SetOwner();
   }
 
   TIter it(fgList);
@@ -214,63 +214,60 @@ void CmdLineOption::CheckCmdLine(int argc, char** argv) {
       }
     }
 
-    if (!isCmdLine)
-      fgPositional.push_back(argv[i]);
+    if (!isCmdLine) fgPositional.push_back(argv[i]);
   }
 }
 
-Bool_t CmdLineOption::CheckCmdLineSpecial(int argc, char ** argv, int i) {
-    TString option = argv[i];
-    if (option == "-h") {
-      std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
-      std::cout << "  -h                  show this help" << std::endl;
-      PrintHelp();
-      exit(0);
-      return kTRUE;
-    } else if (option == "-p") {
-      Print();
-      return kTRUE;
-    } else if (option == "-extra-sorterrc") {
-      if ((i + 1) < argc) {
-        TString includepath = "";
-        if (GetStringValue("IncludePath")) {
-          includepath = gSystem->ExpandPathName(GetStringValue("IncludePath"));
-          if (!(includepath.EndsWith("/"))) includepath += "/";
-        }
-        TString extrafile = argv[i + 1];
-        TString extra = gSystem->ExpandPathName(extrafile.Data());
-        if (!(extra.BeginsWith("/") || extra.BeginsWith("./"))) {
-          extra = includepath + extra;
-        }
-        if (gSystem->AccessPathName(extra)) {
-          std::cout << "Error: extra rc path not accessible (" << extra << ")"
+Bool_t CmdLineOption::CheckCmdLineSpecial(int argc, char** argv, int i) {
+  TString option = argv[i];
+  if (option == "-h") {
+    std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
+    std::cout << "  -h                  show this help" << std::endl;
+    PrintHelp();
+    exit(0);
+    return kTRUE;
+  } else if (option == "-p") {
+    Print();
+    return kTRUE;
+  } else if (option == "-extra-sorterrc") {
+    if ((i + 1) < argc) {
+      TString includepath = "";
+      if (GetStringValue("IncludePath")) {
+        includepath = gSystem->ExpandPathName(GetStringValue("IncludePath"));
+        if (!(includepath.EndsWith("/"))) includepath += "/";
+      }
+      TString extrafile = argv[i + 1];
+      TString extra = gSystem->ExpandPathName(extrafile.Data());
+      if (!(extra.BeginsWith("/") || extra.BeginsWith("./"))) {
+        extra = includepath + extra;
+      }
+      if (gSystem->AccessPathName(extra)) {
+        std::cout << "Error: extra rc path not accessible (" << extra << ")"
                   << std::endl;
-          exit(0);
+        exit(0);
+      } else {
+        void* dirp = gSystem->OpenDirectory(extra);
+        if (dirp == 0) {
+          std::cout << "Reading extra rc file: " << extra << std::endl;
+          fgEnv->ReadFile(extra, kEnvChange);
         } else {
-          void* dirp = gSystem->OpenDirectory(extra);
-          if (dirp == 0) {
-            std::cout
-                << "Reading extra rc file: " << extra << std::endl;
-            fgEnv->ReadFile(extra, kEnvChange);
-          } else {
-            if (!extra.EndsWith("/")) extra += "/";
-            const char* localname = 0;
-            while ((localname = gSystem->GetDirEntry(dirp))) {
-              TString strName = localname;
-              if (strName.EndsWith(".rc")) {
-                std::cout
-                    << "Reading extra fc file: " << extra + strName
-                    << std::endl;
-                fgEnv->ReadFile(extra + strName, kEnvChange);
-              }
+          if (!extra.EndsWith("/")) extra += "/";
+          const char* localname = 0;
+          while ((localname = gSystem->GetDirEntry(dirp))) {
+            TString strName = localname;
+            if (strName.EndsWith(".rc")) {
+              std::cout << "Reading extra fc file: " << extra + strName
+                        << std::endl;
+              fgEnv->ReadFile(extra + strName, kEnvChange);
             }
-            gSystem->FreeDirectory(dirp);
           }
+          gSystem->FreeDirectory(dirp);
         }
       }
-      return kTRUE;
-    } // end extra sorterrc
-    return kFALSE;
+    }
+    return kTRUE;
+  } // end extra sorterrc
+  return kFALSE;
 }
 
 const Int_t CmdLineOption::GetArraySizeFromString(const TString arraystring) {
@@ -281,7 +278,7 @@ const Int_t CmdLineOption::GetArraySizeFromString(const TString arraystring) {
 }
 
 const Int_t CmdLineOption::GetIntArrayValueFromString(const TString arraystring,
-                                                     const Int_t index) {
+                                                      const Int_t index) {
   Int_t returnvalue = 0;
 
   TObjArray* Items = arraystring.Tokenize(delim);
@@ -296,7 +293,7 @@ const Int_t CmdLineOption::GetIntArrayValueFromString(const TString arraystring,
 
 const Double_t
 CmdLineOption::GetDoubleArrayValueFromString(const TString arraystring,
-                                            const Int_t index) {
+                                             const Int_t index) {
   Double_t returnvalue = 0.;
   TObjArray* Items = arraystring.Tokenize(delim);
   Int_t NrValues = Items->GetEntries();
@@ -312,16 +309,16 @@ const char* CmdLineOption::GetHelp() const { return fHelp.Data(); };
 
 const Bool_t CmdLineOption::GetBoolValue() const {
   if (fType != kBool)
-    std::cerr << "CmdLineOption: " << fName
-                         << " not defined as bool! " << std::endl;
+    std::cerr << "CmdLineOption: " << fName << " not defined as bool! "
+              << std::endl;
   if (GetValue("CmdLine." + fName, fDefInt) == 1) return kTRUE;
   return kFALSE;
 }
 
 const Int_t CmdLineOption::GetIntValue() const {
   if (fType != kInt)
-    std::cerr << "CmdLineOption: " << fName
-                         << " not defined as integer!" << std::endl;
+    std::cerr << "CmdLineOption: " << fName << " not defined as integer!"
+              << std::endl;
   return GetValue("CmdLine." + fName, fDefInt);
 }
 
@@ -333,8 +330,8 @@ const Int_t CmdLineOption::GetIntArrayValue(const Int_t index) {
 
 const Double_t CmdLineOption::GetDoubleValue() const {
   if (fType != kDouble)
-    std::cerr << "CmdLineOption: " << fName
-                         << " not defined as double!" << std::endl;
+    std::cerr << "CmdLineOption: " << fName << " not defined as double!"
+              << std::endl;
   return GetValue("CmdLine." + fName, fDefDouble);
 }
 
@@ -360,8 +357,8 @@ const char* CmdLineOption::GetStringValue() {
     fType = kString;
   }
   if (fType != kString)
-    std::cerr << "CmdLineOption: " << fName
-                         << " not defined as char*!" << std::endl;
+    std::cerr << "CmdLineOption: " << fName << " not defined as char*!"
+              << std::endl;
   if (fDefString.IsNull())
     return GetValue("CmdLine." + fName, (const char*)0);
   else
@@ -370,15 +367,15 @@ const char* CmdLineOption::GetStringValue() {
 
 const Bool_t CmdLineOption::GetDefaultBoolValue() const {
   if (fType != kBool)
-    std::cerr << "CmdLineOption: " << fName
-                         << " not defined as bool! " << std::endl;
+    std::cerr << "CmdLineOption: " << fName << " not defined as bool! "
+              << std::endl;
   return (Bool_t)fDefInt;
 }
 
 const Int_t CmdLineOption::GetDefaultIntValue() const {
   if (fType != kInt)
-    std::cerr << "CmdLineOption: " << fName
-                         << " not defined as integer!" << std::endl;
+    std::cerr << "CmdLineOption: " << fName << " not defined as integer!"
+              << std::endl;
   return fDefInt;
 }
 
@@ -389,8 +386,8 @@ const Int_t CmdLineOption::GetDefaultIntArrayValue(const Int_t index) {
 
 const Double_t CmdLineOption::GetDefaultDoubleValue() const {
   if (fType != kDouble)
-    std::cerr << "CmdLineOption: " << fName
-                         << " not defined as double!" << std::endl;
+    std::cerr << "CmdLineOption: " << fName << " not defined as double!"
+              << std::endl;
   return fDefDouble;
 }
 
@@ -406,8 +403,8 @@ const Int_t CmdLineOption::GetDefaultArraySize() {
 
 const char* CmdLineOption::GetDefaultStringValue() const {
   if (fType != kString && fType != kStringNotChecked)
-    std::cerr << "CmdLineOption: " << fName
-                         << " not defined as char*!" << std::endl;
+    std::cerr << "CmdLineOption: " << fName << " not defined as char*!"
+              << std::endl;
   if (fDefString.IsNull())
     return (const char*)nullptr;
   else
@@ -427,7 +424,7 @@ const Int_t CmdLineOption::GetIntValue(const char* name) {
 }
 
 const Int_t CmdLineOption::GetIntArrayValue(const char* name,
-                                           const Int_t index) {
+                                            const Int_t index) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetIntArrayValue(index);
   return 0;
@@ -440,7 +437,7 @@ const Double_t CmdLineOption::GetDoubleValue(const char* name) {
 }
 
 const Double_t CmdLineOption::GetDoubleArrayValue(const char* name,
-                                                 const Int_t index) {
+                                                  const Int_t index) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetDoubleArrayValue(index);
   return 0;
@@ -471,7 +468,7 @@ const Int_t CmdLineOption::GetDefaultIntValue(const char* name) {
 }
 
 const Int_t CmdLineOption::GetDefaultIntArrayValue(const char* name,
-                                                  const Int_t index) {
+                                                   const Int_t index) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetDefaultIntArrayValue(index);
   return 0;
@@ -484,7 +481,7 @@ const Double_t CmdLineOption::GetDefaultDoubleValue(const char* name) {
 }
 
 const Double_t CmdLineOption::GetDefaultDoubleArrayValue(const char* name,
-                                                        const Int_t index) {
+                                                         const Int_t index) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetDefaultDoubleArrayValue(index);
   return 0;
@@ -509,8 +506,8 @@ void CmdLineOption::PrintHelp() {
   while ((entry = dynamic_cast<CmdLineOption*>(it()))) {
     if (entry->fCmdArg == "") continue;
     std::cout << "  " << resetiosflags(std::ios::adjustfield)
-            << setiosflags(std::ios::left) << std::setw(20) << entry->fCmdArg
-            << entry->fHelp << resetiosflags(std::ios::adjustfield);
+              << setiosflags(std::ios::left) << std::setw(20) << entry->fCmdArg
+              << entry->fHelp << resetiosflags(std::ios::adjustfield);
     switch (entry->fType) {
       case kBool:
         std::cout << " (bool)";
@@ -540,8 +537,7 @@ void CmdLineOption::Print() {
   CmdLineOption* entry;
   while ((entry = dynamic_cast<CmdLineOption*>(it()))) {
     std::cout << "  " << resetiosflags(std::ios::adjustfield)
-                         << setiosflags(std::ios::left) << std::setw(20)
-                         << entry->fName;
+              << setiosflags(std::ios::left) << std::setw(20) << entry->fName;
     switch (entry->fType) {
       case kBool:
         if (entry->GetBoolValue())
@@ -587,16 +583,15 @@ TEnv* CmdLineOption::GetEnv() {
   if (GetStringValue("DefaultPath")) {
     defaultpath = gSystem->ExpandPathName(GetStringValue("DefaultPath"));
     if (gSystem->AccessPathName(defaultpath)) {
-      std::cerr << "Error: default path not accessible ("
-                         << defaultpath << ")" << std::endl;
+      std::cerr << "Error: default path not accessible (" << defaultpath << ")"
+                << std::endl;
     } else {
       void* dirp = gSystem->OpenDirectory(defaultpath);
       if (dirp == 0) {
-        std::cerr << "Error: default path not readable ("
-                           << defaultpath << ")" << std::endl;
+        std::cerr << "Error: default path not readable (" << defaultpath << ")"
+                  << std::endl;
       } else {
-        std::cout << "Reading defaults from " << defaultpath
-                          << std::endl;
+        std::cout << "Reading defaults from " << defaultpath << std::endl;
         if (!defaultpath.EndsWith("/")) defaultpath += "/";
         const char* localname = 0;
         while ((localname = gSystem->GetDirEntry(dirp))) {
@@ -626,7 +621,7 @@ TEnv* CmdLineOption::GetEnv() {
       }
       if (gSystem->AccessPathName(filename)) {
         std::cerr << "Error: rc-file not readable (" << filename << ")"
-                           << std::endl;
+                  << std::endl;
       } else {
         void* dirp = gSystem->OpenDirectory(filename);
         if (dirp == 0) {
@@ -638,8 +633,7 @@ TEnv* CmdLineOption::GetEnv() {
           while ((localname = gSystem->GetDirEntry(dirp))) {
             TString strName = localname;
             if (strName.EndsWith(".rc")) {
-              std::cout
-                  << "Reading " << filename + strName << std::endl;
+              std::cout << "Reading " << filename + strName << std::endl;
               fgEnv->ReadFile(filename + strName, kEnvUser);
             }
           }
@@ -750,4 +744,3 @@ const char* CmdLineOption::GetValue(const char* name, const char* dflt) const {
   if (cp) return cp;
   return dflt;
 }
-

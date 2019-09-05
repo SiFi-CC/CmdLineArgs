@@ -44,7 +44,7 @@ protected:
   virtual ~CmdLineConfig();
 
 public:
-  static CmdLineConfig * instance();
+  static CmdLineConfig* instance();
 
   void ReadCmdLine(int argc, char** argv);
 
@@ -65,10 +65,9 @@ public:
 
 protected:
 private:
+  static CmdLineConfig* inst;
 
-  static CmdLineConfig * inst;
-
-  ClassDef(CmdLineConfig, 0); //LCOV_EXCL_LINE
+  ClassDef(CmdLineConfig, 0); // LCOV_EXCL_LINE
 };
 
 #endif

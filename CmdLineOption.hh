@@ -60,7 +60,7 @@ public:
   CmdLineOption* Expand(const TString& s1, const TString& s2);
 
   static void CheckCmdLine(int argc, char** argv);
-  static Bool_t CheckCmdLineSpecial(int argc, char ** argv, int i);
+  static Bool_t CheckCmdLineSpecial(int argc, char** argv, int i);
   const char* GetHelp() const;
 
   const Bool_t GetBoolValue() const;
@@ -100,7 +100,9 @@ public:
   static const Int_t GetDefaultArraySize(const char* name);
   static const char* GetDefaultStringValue(const char* name);
 
-  static const std::vector<TString> & GetPositionalArguments() { return fgPositional; }
+  static const std::vector<TString>& GetPositionalArguments() {
+    return fgPositional;
+  }
 
   static TEnv* GetEnv();
   static void ReadCmdLine(int argc, char** argv);
@@ -115,7 +117,7 @@ private:
   CmdLineOption(const char* name, Int_t defval);
   CmdLineOption(const char* name, Double_t defval);
   CmdLineOption(const char* name, const char* defval);
-  CmdLineOption(const CmdLineOption& ref); //LCOV_EXCL_LINE
+  CmdLineOption(const CmdLineOption& ref); // LCOV_EXCL_LINE
 
   void Init(const char* name, const char* cmd, const char* help);
   Int_t GetValue(const char* name, Int_t def) const;
@@ -139,13 +141,13 @@ private:
 
   void (*fFunction)(); // function to be called when changed
 
-  static TList* fgList; // list of command line options
-  static TEnv* fgEnv;  // general environment
+  static TList* fgList;               // list of command line options
+  static TEnv* fgEnv;                 // general environment
   static PositionalArgs fgPositional; // list of positional arguments
 
   static const TString delim;
 
-  ClassDef(CmdLineOption, 0); //LCOV_EXCL_LINE
+  ClassDef(CmdLineOption, 0); // LCOV_EXCL_LINE
 };
 
 #endif

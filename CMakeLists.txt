@@ -12,7 +12,11 @@ set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
 #--- You need to tell CMake where to find the ROOT installation.
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/Modules $ENV{ROOTSYS})
+list(APPEND CMAKE_MODULE_PATH
+    ${CMAKE_SOURCE_DIR}/Modules
+    $ENV{ROOTSYS}
+    ${CMAKE_SOURCE_DIR}/cmake-scripts
+)
 
 #---Locate the ROOT package and defines a number of variables (e.g. ROOT_INCLUDE_DIRS)
 find_package(ROOT REQUIRED COMPONENTS Core)
@@ -26,6 +30,12 @@ include(GNUInstallDirs)
 file(GLOB cmdlineargs_SRCS "Cmd*.cc")
 file(GLOB cmdlineargs_HDRS "Cmd*.hh")
 
+include(c++-standards)
+include(code-coverage)
+include(sanitizers)
+
+cxx_17()
+add_code_coverage()
 
 ROOT_GENERATE_DICTIONARY(G__cmdlineargs_cc ${cmdlineargs_HDRS} LINKDEF LinkDef.h)
 
