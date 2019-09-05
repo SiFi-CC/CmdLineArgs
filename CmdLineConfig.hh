@@ -68,7 +68,7 @@ private:
 
   static CmdLineConfig * inst;
 
-  ClassDef(CmdLineConfig, 0)
+  ClassDef(CmdLineConfig, 0); //LCOV_EXCL_LINE
 };
 
 #endif

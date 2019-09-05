@@ -53,10 +53,7 @@ public:
                 Double_t defval, void (*f)() = 0);
   CmdLineOption(const char* name, const char* cmd, const char* help,
                 const char* defval, void (*f)() = 0);
-  CmdLineOption(const char* name, Bool_t defval);
-  CmdLineOption(const char* name, Int_t defval);
-  CmdLineOption(const char* name, Double_t defval);
-  CmdLineOption(const char* name, const char* defval);
+
   virtual ~CmdLineOption();
 
   CmdLineOption* Expand(TObject* obj);
@@ -109,11 +106,16 @@ public:
   static void ReadCmdLine(int argc, char** argv);
   static void PrintHelp();
   static void Print();
+  static void ClearOptions();
 
   static CmdLineOption* Find(const char* name);
 
 private:
-  CmdLineOption(const CmdLineOption& ref);
+  CmdLineOption(const char* name, Bool_t defval);
+  CmdLineOption(const char* name, Int_t defval);
+  CmdLineOption(const char* name, Double_t defval);
+  CmdLineOption(const char* name, const char* defval);
+  CmdLineOption(const CmdLineOption& ref); //LCOV_EXCL_LINE
 
   void Init(const char* name, const char* cmd, const char* help);
   Int_t GetValue(const char* name, Int_t def) const;
@@ -138,10 +140,12 @@ private:
   void (*fFunction)(); // function to be called when changed
 
   static TList* fgList; // list of command line options
-  static TEnv* fgEnv;  // general rootsorter environment
-  static std::vector<TString> fgPositional; // list of positional arguments
+  static TEnv* fgEnv;  // general environment
+  static PositionalArgs fgPositional; // list of positional arguments
 
-  ClassDef(CmdLineOption, 0)
+  static const TString delim;
+
+  ClassDef(CmdLineOption, 0); //LCOV_EXCL_LINE
 };
 
 #endif

@@ -31,6 +31,7 @@
 #include <iostream>
 
 #include <TEnv.h>
+#include <THashList.h>
 #include <TList.h>
 #include <TObjArray.h>
 #include <TObjString.h>
@@ -38,11 +39,10 @@
 
 #include "CmdLineOption.hh"
 
-ClassImp(CmdLineOption);
-
 TList* CmdLineOption::fgList = 0;
 TEnv* CmdLineOption::fgEnv = 0;
 std::vector<TString> CmdLineOption::fgPositional;
+const TString CmdLineOption::delim = ": ,";
 
 CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help,
                            Bool_t defval, void (*f)()) {
@@ -50,7 +50,7 @@ CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help
   fDefInt = (defval == kTRUE ? 1 : 0);
   fType = kBool;
   fFunction = f;
-};
+}
 
 CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help,
                            Int_t defval, void (*f)()) {
@@ -58,7 +58,7 @@ CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help
   fDefInt = defval;
   fType = kInt;
   fFunction = f;
-};
+}
 
 CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help,
                            Double_t defval, void (*f)()) {
@@ -66,7 +66,7 @@ CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help
   fDefDouble = defval;
   fType = kDouble;
   fFunction = f;
-};
+}
 
 CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help,
                            const char* defval, void (*f)()) {
@@ -74,31 +74,19 @@ CmdLineOption::CmdLineOption(const char* name, const char* cmd, const char* help
   fDefString = defval;
   fType = kStringNotChecked;
   fFunction = f;
-};
+}
 
-CmdLineOption::CmdLineOption(const char* name, Bool_t defval) {
-  Init(name, 0, 0);
-  fDefInt = (defval == kTRUE ? 1 : 0);
-  fType = kBool;
-};
+CmdLineOption::CmdLineOption(const char* name, Bool_t defval) : CmdLineOption(name, 0, 0, defval, nullptr) {
+}
 
-CmdLineOption::CmdLineOption(const char* name, Int_t defval) {
-  Init(name, 0, 0);
-  fDefInt = defval;
-  fType = kInt;
-};
+CmdLineOption::CmdLineOption(const char* name, Int_t defval) : CmdLineOption(name, 0, 0, defval, nullptr) {
+}
 
-CmdLineOption::CmdLineOption(const char* name, Double_t defval) {
-  Init(name, 0, 0);
-  fDefDouble = defval;
-  fType = kDouble;
-};
+CmdLineOption::CmdLineOption(const char* name, Double_t defval) : CmdLineOption(name, 0, 0, defval, nullptr) {
+}
 
-CmdLineOption::CmdLineOption(const char* name, const char* defval) {
-  Init(name, 0, 0);
-  fDefString = defval;
-  fType = kStringNotChecked;
-};
+CmdLineOption::CmdLineOption(const char* name, const char* defval) : CmdLineOption(name, 0, 0, defval, nullptr) {
+}
 
 CmdLineOption::CmdLineOption(const CmdLineOption& ref) {
   MayNotUse("CmdLineOption(const CmdLineOption& ref)");
@@ -107,21 +95,37 @@ CmdLineOption::CmdLineOption(const CmdLineOption& ref) {
 CmdLineOption::CmdLineOption() { Init(0, 0, 0); };
 
 CmdLineOption::~CmdLineOption() {
+  TObject * obj = GetEnv()->Lookup("CmdLine." +  fName);
+  if (obj) GetEnv()->GetTable()->Remove(obj);
+
   if (!fName.IsNull()) fgList->Remove(this);
-};
+}
+
+void CmdLineOption::ClearOptions()
+{
+    for (int i = fgList->GetEntries(); i > 2; --i)
+    {
+        TObject * obj =  fgList->Last();
+        fgList->RemoveLast();
+        delete obj;
+        obj = nullptr;
+    }
+
+    fgPositional.clear();
+}
 
 CmdLineOption* CmdLineOption::Find(const char* name) {
-  if (fgList == 0) return 0;
+  if (fgList == 0) return nullptr;
   TIter it(fgList);
   CmdLineOption* entry;
   while ((entry = dynamic_cast<CmdLineOption*>(it()))) {
     if (entry->fName == name) return entry;
   }
-  return 0;
+  return nullptr;
 }
 
 CmdLineOption* CmdLineOption::Expand(TObject* obj) {
-  if (obj == 0) return 0;
+  if (obj == 0) return nullptr;
   TString cname = obj->ClassName();
   TString name = obj->GetName();
   return Expand(cname, name);
@@ -163,7 +167,10 @@ void CmdLineOption::Init(const char* name, const char* cmd, const char* help) {
 
   if (fName.IsNull()) return;
 
-  if (fgList == 0) fgList = new TList();
+  if (fgList == 0) {
+      fgList = new TList();
+      fgList->SetOwner();
+  }
 
   TIter it(fgList);
   CmdLineOption* entry;
@@ -181,7 +188,7 @@ void CmdLineOption::Init(const char* name, const char* cmd, const char* help) {
   }
 
   fgList->Add(this);
-};
+}
 
 void CmdLineOption::CheckCmdLine(int argc, char** argv) {
   if (argc < 2) return;
@@ -200,9 +207,7 @@ void CmdLineOption::CheckCmdLine(int argc, char** argv) {
 
       if (entry->fCmdArg == argv[i]) {
         isCmdLine = kTRUE;
-        if (entry->fType == kBool)
-          GetEnv()->SetValue("CmdLine." + entry->fName, 1);
-        else if (i < argc - 1)
+        if (i < argc - 1)
           GetEnv()->SetValue("CmdLine." + entry->fName, argv[++i]);
         if (entry->fFunction != 0) (*entry->fFunction)();
         break;
@@ -212,7 +217,7 @@ void CmdLineOption::CheckCmdLine(int argc, char** argv) {
     if (!isCmdLine)
       fgPositional.push_back(argv[i]);
   }
-};
+}
 
 Bool_t CmdLineOption::CheckCmdLineSpecial(int argc, char ** argv, int i) {
     TString option = argv[i];
@@ -269,7 +274,6 @@ Bool_t CmdLineOption::CheckCmdLineSpecial(int argc, char ** argv, int i) {
 }
 
 const Int_t CmdLineOption::GetArraySizeFromString(const TString arraystring) {
-  TString delim = ": ";
   TObjArray* Items = arraystring.Tokenize(delim);
   Int_t NrValues = Items->GetEntries();
   delete Items;
@@ -278,7 +282,6 @@ const Int_t CmdLineOption::GetArraySizeFromString(const TString arraystring) {
 
 const Int_t CmdLineOption::GetIntArrayValueFromString(const TString arraystring,
                                                      const Int_t index) {
-  TString delim = ": ";
   Int_t returnvalue = 0;
 
   TObjArray* Items = arraystring.Tokenize(delim);
@@ -294,7 +297,6 @@ const Int_t CmdLineOption::GetIntArrayValueFromString(const TString arraystring,
 const Double_t
 CmdLineOption::GetDoubleArrayValueFromString(const TString arraystring,
                                             const Int_t index) {
-  TString delim = ": ";
   Double_t returnvalue = 0.;
   TObjArray* Items = arraystring.Tokenize(delim);
   Int_t NrValues = Items->GetEntries();
@@ -311,17 +313,17 @@ const char* CmdLineOption::GetHelp() const { return fHelp.Data(); };
 const Bool_t CmdLineOption::GetBoolValue() const {
   if (fType != kBool)
     std::cerr << "CmdLineOption: " << fName
-                         << " not defined as bool! " << fType << std::endl;
+                         << " not defined as bool! " << std::endl;
   if (GetValue("CmdLine." + fName, fDefInt) == 1) return kTRUE;
   return kFALSE;
-};
+}
 
 const Int_t CmdLineOption::GetIntValue() const {
   if (fType != kInt)
     std::cerr << "CmdLineOption: " << fName
                          << " not defined as integer!" << std::endl;
   return GetValue("CmdLine." + fName, fDefInt);
-};
+}
 
 const Int_t CmdLineOption::GetIntArrayValue(const Int_t index) {
 
@@ -334,7 +336,7 @@ const Double_t CmdLineOption::GetDoubleValue() const {
     std::cerr << "CmdLineOption: " << fName
                          << " not defined as double!" << std::endl;
   return GetValue("CmdLine." + fName, fDefDouble);
-};
+}
 
 const Double_t CmdLineOption::GetDoubleArrayValue(const Int_t index) {
 
@@ -364,21 +366,21 @@ const char* CmdLineOption::GetStringValue() {
     return GetValue("CmdLine." + fName, (const char*)0);
   else
     return GetValue("CmdLine." + fName, fDefString.Data());
-};
+}
 
 const Bool_t CmdLineOption::GetDefaultBoolValue() const {
   if (fType != kBool)
     std::cerr << "CmdLineOption: " << fName
-                         << " not defined as bool! " << fType << std::endl;
+                         << " not defined as bool! " << std::endl;
   return (Bool_t)fDefInt;
-};
+}
 
 const Int_t CmdLineOption::GetDefaultIntValue() const {
   if (fType != kInt)
     std::cerr << "CmdLineOption: " << fName
                          << " not defined as integer!" << std::endl;
   return fDefInt;
-};
+}
 
 const Int_t CmdLineOption::GetDefaultIntArrayValue(const Int_t index) {
   const TString arraystring = GetDefaultStringValue();
@@ -390,7 +392,7 @@ const Double_t CmdLineOption::GetDefaultDoubleValue() const {
     std::cerr << "CmdLineOption: " << fName
                          << " not defined as double!" << std::endl;
   return fDefDouble;
-};
+}
 
 const Double_t CmdLineOption::GetDefaultDoubleArrayValue(const Int_t index) {
   const TString arraystring = GetDefaultStringValue();
@@ -407,42 +409,42 @@ const char* CmdLineOption::GetDefaultStringValue() const {
     std::cerr << "CmdLineOption: " << fName
                          << " not defined as char*!" << std::endl;
   if (fDefString.IsNull())
-    return (const char*)0;
+    return (const char*)nullptr;
   else
     return fDefString.Data();
-};
+}
 
 const Bool_t CmdLineOption::GetBoolValue(const char* name) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetBoolValue();
   return kFALSE;
-};
+}
 
 const Int_t CmdLineOption::GetIntValue(const char* name) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetIntValue();
   return 0;
-};
+}
 
 const Int_t CmdLineOption::GetIntArrayValue(const char* name,
                                            const Int_t index) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetIntArrayValue(index);
   return 0;
-};
+}
 
 const Double_t CmdLineOption::GetDoubleValue(const char* name) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetDoubleValue();
   return 0.;
-};
+}
 
 const Double_t CmdLineOption::GetDoubleArrayValue(const char* name,
                                                  const Int_t index) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetDoubleArrayValue(index);
   return 0;
-};
+}
 
 const Int_t CmdLineOption::GetArraySize(const char* name) {
   CmdLineOption* entry = Find(name);
@@ -453,40 +455,40 @@ const Int_t CmdLineOption::GetArraySize(const char* name) {
 const char* CmdLineOption::GetStringValue(const char* name) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetStringValue();
-  return 0;
-};
+  return nullptr;
+}
 
 const Bool_t CmdLineOption::GetDefaultBoolValue(const char* name) {
   CmdLineOption* entry = Find(name);
   if (entry->fName == name) return entry->GetDefaultBoolValue();
   return kFALSE;
-};
+}
 
 const Int_t CmdLineOption::GetDefaultIntValue(const char* name) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetDefaultIntValue();
   return 0;
-};
+}
 
 const Int_t CmdLineOption::GetDefaultIntArrayValue(const char* name,
                                                   const Int_t index) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetDefaultIntArrayValue(index);
   return 0;
-};
+}
 
 const Double_t CmdLineOption::GetDefaultDoubleValue(const char* name) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetDefaultDoubleValue();
   return 0.;
-};
+}
 
 const Double_t CmdLineOption::GetDefaultDoubleArrayValue(const char* name,
                                                         const Int_t index) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetDefaultDoubleArrayValue(index);
   return 0;
-};
+}
 
 const Int_t CmdLineOption::GetDefaultArraySize(const char* name) {
   CmdLineOption* entry = Find(name);
@@ -497,8 +499,8 @@ const Int_t CmdLineOption::GetDefaultArraySize(const char* name) {
 const char* CmdLineOption::GetDefaultStringValue(const char* name) {
   CmdLineOption* entry = Find(name);
   if (entry) return entry->GetDefaultStringValue();
-  return 0;
-};
+  return nullptr;
+}
 
 void CmdLineOption::PrintHelp() {
   if (fgList == 0) return;
@@ -529,7 +531,7 @@ void CmdLineOption::PrintHelp() {
     }
     std::cout << std::endl;
   }
-};
+}
 
 void CmdLineOption::Print() {
   if (fgList == 0) return;
@@ -569,12 +571,13 @@ void CmdLineOption::Print() {
     }
     std::cout << resetiosflags(std::ios::adjustfield) << std::endl;
   }
-};
+}
 
 void CmdLineOption::ReadCmdLine(int argc, char** argv) {
   GetEnv();
+  fgPositional.clear();
   CheckCmdLine(argc, argv);
-};
+}
 
 TEnv* CmdLineOption::GetEnv() {
   if (fgEnv != 0) return fgEnv;
@@ -688,7 +691,7 @@ const char* CmdLineOption::Getvalue(const char* name) const {
     count += 2;
   }
   delete components;
-  return 0;
+  return nullptr;
 }
 
 // code taken from TEnv functions

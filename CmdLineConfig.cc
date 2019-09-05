@@ -35,8 +35,6 @@
 
 #include "CmdLineConfig.hh"
 
-ClassImp(CmdLineConfig);
-
 static CmdLineOption t6("ParameterDirectory", "", "", "./");
 
 static CmdLineOption datadir("DataDir", "-dd", "Set path to data directory",

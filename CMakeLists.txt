@@ -7,7 +7,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 
 set (VERSION_MAJOR 1)
 set (VERSION_MINOR 1)
-set (VERSION_PATCH 0)
+set (VERSION_PATCH 1)
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
 #--- You need to tell CMake where to find the ROOT installation.
