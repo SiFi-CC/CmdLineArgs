@@ -10,6 +10,8 @@ int main(int argc, char** argv) {
   CmdLineOption string_val("CustomStringArgName", "-string", "Help message",
                            "pi");
 
+  CmdLineOption::SetPositionalText("[...]");
+
   CmdLineConfig::instance()->ReadCmdLine(argc, argv);
 
   std::cout << "Bool value   = "

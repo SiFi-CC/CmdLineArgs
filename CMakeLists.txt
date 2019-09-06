@@ -44,7 +44,7 @@ target_link_libraries(CmdLineArgs
     ${ROOT_LIBRARIES}
 )
 
-include_directories(${CMAKE_SOURCE_DIR})
+include_directories(BEFORE ${CMAKE_SOURCE_DIR})
 
 add_executable(example example.cc)
 target_link_libraries(example

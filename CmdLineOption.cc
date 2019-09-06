@@ -24,6 +24,8 @@
 
   \author Volker Hejny
   \date   2002-07-29
+  \author Rafał Lalik
+  \date   2019-03-01
 */
 
 #include <cstdlib>
@@ -42,6 +44,7 @@
 TList* CmdLineOption::fgList = 0;
 TEnv* CmdLineOption::fgEnv = 0;
 std::vector<TString> CmdLineOption::fgPositional;
+TString CmdLineOption::fPosText;
 const TString CmdLineOption::delim = ": ,";
 
 CmdLineOption::CmdLineOption(const char* name, const char* cmd,
@@ -237,7 +240,9 @@ void CmdLineOption::CheckCmdLine(int argc, char** argv) {
 Bool_t CmdLineOption::CheckCmdLineSpecial(int argc, char** argv, int i) {
   TString option = argv[i];
   if (option == "-h") {
-    std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
+    std::cout << "Usage: " << argv[0] << " [options]";
+    if (fPosText.Length()) std::cout << " " << fPosText;
+    std::cout << std::endl;
     std::cout << "  -h                  show this help" << std::endl;
     PrintHelp();
     exit(0);
@@ -401,7 +406,7 @@ const Int_t CmdLineOption::GetDefaultIntValue() const {
   return fDefInt;
 }
 
-const Int_t CmdLineOption::GetDefaultIntArrayValue(const Int_t index) {
+const Int_t CmdLineOption::GetDefaultIntArrayValue(const Int_t index) const {
   const TString arraystring = GetDefaultStringValue(kTRUE);
   return GetIntArrayValueFromString(arraystring, index);
 }
@@ -413,12 +418,13 @@ const Double_t CmdLineOption::GetDefaultDoubleValue() const {
   return fDefDouble;
 }
 
-const Double_t CmdLineOption::GetDefaultDoubleArrayValue(const Int_t index) {
+const Double_t
+CmdLineOption::GetDefaultDoubleArrayValue(const Int_t index) const {
   const TString arraystring = GetDefaultStringValue(kTRUE);
   return GetDoubleArrayValueFromString(arraystring, index);
 }
 
-const Int_t CmdLineOption::GetDefaultArraySize() {
+const Int_t CmdLineOption::GetDefaultArraySize() const {
   const TString arraystring = GetDefaultStringValue(kTRUE);
   return GetArraySizeFromString(arraystring);
 }

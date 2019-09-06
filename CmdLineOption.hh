@@ -42,7 +42,15 @@ typedef std::vector<TString> PositionalArgs;
 
 class CmdLineOption : public TObject {
 public:
-  enum OptionType { kNone, kFlag, kBool, kInt, kDouble, kString, kStringNotChecked };
+  enum OptionType {
+    kNone,
+    kFlag,
+    kBool,
+    kInt,
+    kDouble,
+    kString,
+    kStringNotChecked
+  };
 
   CmdLineOption();
   CmdLineOption(const char* name, const char* cmd, const char* help,
@@ -76,11 +84,11 @@ public:
 
   const Bool_t GetDefaultBoolValue() const;
   const Int_t GetDefaultIntValue() const;
-  const Int_t GetDefaultIntArrayValue(const Int_t index);
+  const Int_t GetDefaultIntArrayValue(const Int_t index) const;
 
   const Double_t GetDefaultDoubleValue() const;
-  const Double_t GetDefaultDoubleArrayValue(const Int_t index);
-  const Int_t GetDefaultArraySize();
+  const Double_t GetDefaultDoubleArrayValue(const Int_t index) const;
+  const Int_t GetDefaultArraySize() const;
   const char* GetDefaultStringValue(Bool_t arrayParsing = kFALSE) const;
 
   static const Bool_t GetFlagValue(const char* name);
@@ -103,9 +111,8 @@ public:
   static const Int_t GetDefaultArraySize(const char* name);
   static const char* GetDefaultStringValue(const char* name);
 
-  static const std::vector<TString>& GetPositionalArguments() {
-    return fgPositional;
-  }
+  static const PositionalArgs& GetPositionalArguments() { return fgPositional; }
+  static const void SetPositionalText(const TString& text) { fPosText = text; }
 
   static TEnv* GetEnv();
   static void ReadCmdLine(int argc, char** argv);
@@ -148,6 +155,7 @@ private:
   static TList* fgList;               // list of command line options
   static TEnv* fgEnv;                 // general environment
   static PositionalArgs fgPositional; // list of positional arguments
+  static TString fPosText;
 
   static const TString delim;
 
