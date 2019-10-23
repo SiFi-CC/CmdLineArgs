@@ -6,24 +6,43 @@ Simple library providing quick access to cmd line arguments. Main features:
 
 * Supports following data types: bool, int, double, string;
 
+# Depedencies
+
+* set of usefull cmake scripts from ```https://github.com/StableCoder/cmake-scripts```
+
+# Installation
+
+### Clone the repository
+
+```git clone https://github.com/SiFi-CC/CmdLineArgs```
+
+### Init submodules
+
+```cd CmdLineArgs```
+
+```git submodule update --init --recursive```
+
+    or
+```./prepare_tree.sh```
+
+### Prepare build
+
+```mkdir build && cd build```
+
+```cmake .. # -DCMAKE_INSTALL_PREFIX=... some path other than default /usr/local```
+
+```make ```
+
+and optional
+
+```make install```
+
 # Usage
 
 
-From the command line:
-
-    myexec -a aaa -b bbb -c ccc xxx yyy zzz
-
-```-a```, ```-b```, ```-c``` are command line options with ```aaa```, ```bbb```, ```ccc``` being they values.
-```xxx```, ```yyy```, ```zzz``` are positional arguments.
-
-Special options:
-
-* ```-h``` - will list of all available options
-* ```-p``` - will print names of the parameters and their current (or default) values, order of these arguments matters
-
 ## Define command line arguments
 
-Define the options in the beginning of the ```main``` function or the global scope of the library.
+Define the options in the beginning of the ```main``` function or the global scope of the library (not recommended).
 
     CmdLineOption bool_val("CustomBoolArgName", "-bool", "Help message" , true);
     CmdLineOption int_val("CustomIntegerArgName", "-int", "Help message" , 13);
@@ -41,7 +60,7 @@ Define the options in the beginning of the ```main``` function or the global sco
     std::cout << "Double value = " << CmdLineOption::GetDoubleValue("CustomDoubleArgName") << std::endl;
     std::cout << "String value = " << CmdLineOption::GetStringValue("CustomStringArgName") << std::endl;
 
-## Access positional arguments:
+## Access positional arguments
 
     PositionalArgs pargs = CmdLineOption::GetPositionalArguments();
 
@@ -53,6 +72,21 @@ will return the numer of arguments.
 
 
 See ```example.cc``` for minimal usage example.
+
+## From terminal
+
+From the command line:
+
+    myexec -a aaa -b bbb -c ccc xxx yyy zzz
+
+```-a```, ```-b```, ```-c``` are command line options with ```aaa```, ```bbb```, ```ccc``` being they values.
+```xxx```, ```yyy```, ```zzz``` are positional arguments.
+
+Special options:
+
+* ```-h``` - will list of all available options
+* ```-p``` - will print names of the parameters and their current (or default) values, order of these arguments matters
+
 
 # Credits
 

@@ -1,5 +1,8 @@
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
 find_package(cppunit)
+if (NOT CPPUNIT_FOUND)
+    return()
+endif()
 
 file(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*_tests.cpp" )
 
