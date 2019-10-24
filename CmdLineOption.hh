@@ -7,12 +7,12 @@
  *
  * Author List:
  *    Volker Hejny                Original author
- *    Rafa? Lalik                 Modifications, creation of CmdLineArgs library
+ *    Rafał Lalik                 Modifications, creation of CmdLineArgs library
  *
  * Copyright Information:
  *    Copyright (C) 2002          Institut für Kernphysik
  *                                Forschungszentrum Jülich
- *    Copyright (C) 2018          Rafa? Lalik
+ *    Copyright (C) 2018          Rafał Lalik, Jagiellonian University Kraków
  *
  *****************************************************************************/
 
@@ -69,8 +69,6 @@ public:
   CmdLineOption* Expand(TObject* obj);
   CmdLineOption* Expand(const TString& s1, const TString& s2);
 
-  static void CheckCmdLine(int argc, char** argv);
-  static Bool_t CheckCmdLineSpecial(int argc, char** argv, int i);
   const char* GetHelp() const;
 
   const Bool_t GetFlagValue() const;
@@ -111,16 +109,8 @@ public:
   static const Int_t GetDefaultArraySize(const char* name);
   static const char* GetDefaultStringValue(const char* name);
 
-  static const PositionalArgs& GetPositionalArguments() { return fgPositional; }
-  static const void SetPositionalText(const TString& text) { fPosText = text; }
-
-  static TEnv* GetEnv();
-  static void ReadCmdLine(int argc, char** argv);
-  static void PrintHelp();
-  static void Print();
-  static void ClearOptions();
-
-  static CmdLineOption* Find(const char* name);
+  void PrintHelp();
+  void Print();
 
 private:
   CmdLineOption(const char* name);
@@ -152,12 +142,9 @@ private:
 
   void (*fFunction)(); // function to be called when changed
 
-  static TList* fgList;               // list of command line options
-  static TEnv* fgEnv;                 // general environment
-  static PositionalArgs fgPositional; // list of positional arguments
-  static TString fPosText;
-
   static const TString delim;
+
+  friend class CmdLineConfig;
 
   ClassDef(CmdLineOption, 0); // LCOV_EXCL_LINE
 };

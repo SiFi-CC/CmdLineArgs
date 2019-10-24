@@ -5,9 +5,9 @@ string(TOUPPER "${PROJECT_NAME}" CAPS_PROJECT_NAME)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 
-set (VERSION_MAJOR 1)
-set (VERSION_MINOR 1)
-set (VERSION_PATCH 2)
+set (VERSION_MAJOR 2)
+set (VERSION_MINOR 0)
+set (VERSION_PATCH 0)
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
 #--- You need to tell CMake where to find the ROOT installation.
@@ -49,7 +49,6 @@ include_directories(BEFORE ${CMAKE_SOURCE_DIR})
 add_executable(example example.cc)
 target_link_libraries(example
     CmdLineArgs)
-#add_executable(UnitTester test_runner.cpp)
 
 enable_testing()
 add_subdirectory(tests)

@@ -34,7 +34,7 @@ public:
     string_val =
         new CmdLineOption("StringArg", "-string", "String Help message", "pi");
   }
-  virtual void tearDown() override { CmdLineOption::ClearOptions(); }
+  virtual void tearDown() override { CmdLineConfig::instance()->ClearOptions(); }
 
 protected:
   void Principles() {
@@ -49,7 +49,7 @@ protected:
     CPPUNIT_ASSERT_EQUAL(std::string("String Help message"),
                          std::string(string_val->GetHelp()));
 
-    CmdLineOption::PrintHelp();
+    CmdLineConfig::instance()->PrintHelp();
   }
 
   void SingleParams() {
@@ -133,7 +133,7 @@ protected:
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
 
-      PositionalArgs pargs = CmdLineOption::GetPositionalArguments();
+      PositionalArgs pargs = CmdLineConfig::instance()->GetPositionalArguments();
       CPPUNIT_ASSERT_EQUAL(3, (int)pargs.size());
       CPPUNIT_ASSERT_EQUAL(TString("positional1"), pargs[0]);
       CPPUNIT_ASSERT_EQUAL(TString("positional2"), pargs[1]);
@@ -165,7 +165,7 @@ protected:
       CPPUNIT_ASSERT_EQUAL(std::string("test string"),
                            std::string(string_val->GetStringValue()));
 
-      PositionalArgs pargs = CmdLineOption::GetPositionalArguments();
+      PositionalArgs pargs = CmdLineConfig::instance()->GetPositionalArguments();
       CPPUNIT_ASSERT_EQUAL(3, (int)pargs.size());
       CPPUNIT_ASSERT_EQUAL(TString("positional1"), pargs[0]);
       CPPUNIT_ASSERT_EQUAL(TString("positional2"), pargs[1]);
@@ -188,7 +188,7 @@ protected:
           std::string("test string"),
           std::string(CmdLineOption::GetStringValue("StringArg")));
 
-      PositionalArgs pargs = CmdLineOption::GetPositionalArguments();
+      PositionalArgs pargs = CmdLineConfig::instance()->GetPositionalArguments();
       CPPUNIT_ASSERT_EQUAL(2, (int)pargs.size());
       CPPUNIT_ASSERT_EQUAL(TString("positional1"), pargs[0]);
       CPPUNIT_ASSERT_EQUAL(TString("positional3"), pargs[1]);
@@ -241,7 +241,7 @@ protected:
     CPPUNIT_ASSERT_EQUAL(std::string("pi"),
                          std::string(string_val->GetStringValue()));
 
-    PositionalArgs pargs = CmdLineOption::GetPositionalArguments();
+    PositionalArgs pargs = CmdLineConfig::instance()->GetPositionalArguments();
     CPPUNIT_ASSERT_EQUAL(0, (int)pargs.size());
   }
 
@@ -278,7 +278,7 @@ protected:
     CPPUNIT_ASSERT_EQUAL(std::string("pi"),
                          std::string(string_val->GetDefaultStringValue()));
 
-    PositionalArgs pargs = CmdLineOption::GetPositionalArguments();
+    PositionalArgs pargs = CmdLineConfig::instance()->GetPositionalArguments();
     CPPUNIT_ASSERT_EQUAL(0, (int)pargs.size());
   }
 

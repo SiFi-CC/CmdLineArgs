@@ -10,9 +10,10 @@ int main(int argc, char** argv) {
   CmdLineOption string_val("CustomStringArgName", "-string", "Help message",
                            "pi");
 
-  CmdLineOption::SetPositionalText("[...]");
+  CmdLineConfig::SetPositionalText("[...]");
 
-  CmdLineConfig::instance()->ReadCmdLine(argc, argv);
+  CmdLineConfig* cmdcfg = CmdLineConfig::instance();
+  cmdcfg->ReadCmdLine(argc, argv);
 
   std::cout << "Bool value   = "
             << CmdLineOption::GetBoolValue("CustomBoolArgName") << std::endl;
@@ -25,7 +26,7 @@ int main(int argc, char** argv) {
             << CmdLineOption::GetStringValue("CustomStringArgName")
             << std::endl;
 
-  PositionalArgs pargs = CmdLineOption::GetPositionalArguments();
+  PositionalArgs pargs = cmdcfg->GetPositionalArguments();
   std::cout << std::endl << "Positional arguments: " << std::endl;
   for (int i = 0; i < pargs.size(); ++i)
     std::cout << " " << pargs[i] << std::endl;
