@@ -44,6 +44,8 @@
 
 const TString CmdLineOption::delim = ": ,";
 
+Bool_t CmdLineOption::AbortOnWarning = kFALSE;
+
 CmdLineOption::CmdLineOption(const char* name, const char* cmd,
                              const char* help, void (*f)()) {
   Init(name, cmd, help);
@@ -111,7 +113,7 @@ CmdLineOption::~CmdLineOption() {
       CmdLineConfig::instance()->GetEnv()->Lookup("CmdLine." + fName);
   if (obj) CmdLineConfig::instance()->GetEnv()->GetTable()->Remove(obj);
 
-  if (!fName.IsNull()) CmdLineConfig::instance()->RemoveOption(this);
+  if (!fName.IsNull()) CmdLineConfig::instance()->Remove(this);
 }
 
 CmdLineOption* CmdLineOption::Expand(TObject* obj) {
@@ -124,7 +126,7 @@ CmdLineOption* CmdLineOption::Expand(TObject* obj) {
 CmdLineOption* CmdLineOption::Expand(const TString& cname,
                                      const TString& name) {
   TString newname = cname + "." + name + "." + fName;
-  CmdLineOption* newopt = CmdLineConfig::instance()->Find(newname);
+  CmdLineOption* newopt = CmdLineConfig::instance()->FindOption(newname);
   if (newopt != 0) return newopt;
   switch (fType) {
     case kFlag:
@@ -161,7 +163,7 @@ void CmdLineOption::Init(const char* name, const char* cmd, const char* help) {
   fType = kNone;
   fFunction = 0;
 
-  CmdLineConfig::instance()->InsertOption(this);
+  CmdLineConfig::instance()->Insert(this);
 }
 
 const Int_t CmdLineOption::GetArraySizeFromString(const TString arraystring) {
@@ -258,9 +260,11 @@ const char* CmdLineOption::GetStringValue(Bool_t arrayParsing) {
     }
     fType = kString;
   }
-  if (!arrayParsing and fType != kString)
+  if (!arrayParsing and fType != kString) {
     std::cerr << "CmdLineOption: " << fName << " not defined as char*!"
               << std::endl;
+    if (AbortOnWarning) abort();
+  }
   if (fDefString.IsNull())
     return GetValue("CmdLine." + fName, (const char*)0);
   else
@@ -315,95 +319,95 @@ const char* CmdLineOption::GetDefaultStringValue(Bool_t arrayparsing) const {
 }
 
 const Bool_t CmdLineOption::GetFlagValue(const char* name) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetFlagValue();
   return kFALSE;
 }
 
 const Bool_t CmdLineOption::GetBoolValue(const char* name) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetBoolValue();
   return kFALSE;
 }
 
 const Int_t CmdLineOption::GetIntValue(const char* name) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetIntValue();
   return 0;
 }
 
 const Int_t CmdLineOption::GetIntArrayValue(const char* name,
                                             const Int_t index) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetIntArrayValue(index);
   return 0;
 }
 
 const Double_t CmdLineOption::GetDoubleValue(const char* name) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetDoubleValue();
   return 0.;
 }
 
 const Double_t CmdLineOption::GetDoubleArrayValue(const char* name,
                                                   const Int_t index) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetDoubleArrayValue(index);
   return 0;
 }
 
 const Int_t CmdLineOption::GetArraySize(const char* name) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetArraySize();
   return 0;
 }
 
 const char* CmdLineOption::GetStringValue(const char* name) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetStringValue();
   return nullptr;
 }
 
 const Bool_t CmdLineOption::GetDefaultBoolValue(const char* name) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry->fName == name) return entry->GetDefaultBoolValue();
   return kFALSE;
 }
 
 const Int_t CmdLineOption::GetDefaultIntValue(const char* name) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetDefaultIntValue();
   return 0;
 }
 
 const Int_t CmdLineOption::GetDefaultIntArrayValue(const char* name,
                                                    const Int_t index) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetDefaultIntArrayValue(index);
   return 0;
 }
 
 const Double_t CmdLineOption::GetDefaultDoubleValue(const char* name) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetDefaultDoubleValue();
   return 0.;
 }
 
 const Double_t CmdLineOption::GetDefaultDoubleArrayValue(const char* name,
                                                          const Int_t index) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetDefaultDoubleArrayValue(index);
   return 0;
 }
 
 const Int_t CmdLineOption::GetDefaultArraySize(const char* name) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetDefaultArraySize();
   return 0;
 }
 
 const char* CmdLineOption::GetDefaultStringValue(const char* name) {
-  CmdLineOption* entry = CmdLineConfig::instance()->Find(name);
+  CmdLineOption* entry = CmdLineConfig::instance()->FindOption(name);
   if (entry) return entry->GetDefaultStringValue();
   return nullptr;
 }

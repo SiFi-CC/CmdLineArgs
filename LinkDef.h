@@ -6,5 +6,6 @@
 
 #pragma link C++ class CmdLineConfig;
 #pragma link C++ class CmdLineOption;
+#pragma link C++ class CmdLineArg;
 
 #endif

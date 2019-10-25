@@ -33,29 +33,30 @@
 #include <TObjString.h>
 #include <TString.h>
 
+#include <cstdlib>
 #include <iostream>
 
 #include "CmdLineConfig.hh"
+
+TEnv* CmdLineConfig::fgEnv = nullptr;
+CmdLineConfig::Options CmdLineConfig::fgOpts;
+Positional CmdLineConfig::fgArgs;
+Greedy CmdLineConfig::fgGreedy;
+TString CmdLineConfig::fPosText = "[...]";
+Int_t CmdLineConfig::fGreedyPosition = -1;
+CmdLineArg* CmdLineConfig::fGreedy = nullptr;
+
+CmdLineConfig::ListMap CmdLineConfig::_map_opts;
+CmdLineConfig::ListMap CmdLineConfig::_map_args;
 
 static CmdLineOption t6("ParameterDirectory", "", "", "./");
 
 static CmdLineOption datadir("DataDir", "-dd", "Set path to data directory",
                              "./share");
 
-TEnv* CmdLineConfig::fgEnv = nullptr;
-std::vector<TString> CmdLineConfig::fgPositional;
-TList* CmdLineConfig::fgList = nullptr;
-TString CmdLineConfig::fPosText;
+CmdLineConfig::CmdLineConfig() : name(".cmdlinerc"){};
 
-CmdLineConfig::CmdLineConfig() : name(".cmdlinerc") {
-  fgList = new TList();
-  fgList->SetOwner();
-};
-
-CmdLineConfig::CmdLineConfig(const char* name) : name(name) {
-  fgList = new TList();
-  fgList->SetOwner();
-};
+CmdLineConfig::CmdLineConfig(const char* name) : name(name){};
 
 CmdLineConfig::~CmdLineConfig(){};
 
@@ -74,16 +75,20 @@ CmdLineConfig* CmdLineConfig::instance(const char* name) {
 
 void CmdLineConfig::ReadCmdLine(int argc, char** argv) {
   GetEnv();
-  fgPositional.clear();
 
-  CmdLineOption* entry = nullptr;
+  fgGreedy.erase(fgGreedy.begin(), fgGreedy.end());
+  fgGreedy.clear();
+
+  std::vector<TString> positional;
 
   for (Int_t i = 1; i < argc; i++) {
     Bool_t isCmdLine = kFALSE;
     if (CheckCmdLineSpecial(argc, argv, i)) continue;
 
-    TIter it(fgList);
-    while ((entry = dynamic_cast<CmdLineOption*>(it()))) {
+    Options::const_iterator it = fgOpts.begin();
+
+    while (it != fgOpts.end()) {
+      CmdLineOption* entry = (it++)->second;
       if (entry->fCmdArg == "") continue;
 
       if (entry->fCmdArg == argv[i]) {
@@ -99,7 +104,32 @@ void CmdLineConfig::ReadCmdLine(int argc, char** argv) {
       }
     }
 
-    if (!isCmdLine) fgPositional.push_back(argv[i]);
+    if (!isCmdLine) positional.push_back(argv[i]);
+  }
+
+  int greedy_len = positional.size() - fgArgs.size();
+  if (greedy_len < 0) {
+    std::cerr << "Not enough positional arguments. Needed " << fgArgs.size()
+              << ", given " << positional.size() << std::endl;
+    abort();
+  }
+
+  Positional::iterator pit = fgArgs.begin();
+  Int_t greedy_end = fGreedyPosition + greedy_len - 1;
+
+  ListMap::iterator ait = _map_args.begin();
+
+  for (int i = 0; i < positional.size(); ++i) {
+    if (i < fGreedyPosition) {
+      fgArgs[*ait++]->fValue = positional[i];
+    } else if (i > greedy_end) {
+      fgArgs[*ait++]->fValue = positional[i];
+    } else {
+      CmdLineArg* greedy =
+          new CmdLineArg("", "", fGreedy->fType, nullptr, true);
+      greedy->fValue = positional[i];
+      fgGreedy.push_back(greedy);
+    }
   }
 }
 
@@ -317,30 +347,51 @@ TEnv* CmdLineConfig::GetEnv() {
 }
 
 void CmdLineConfig::ClearOptions() {
-  for (int i = fgList->GetEntries(); i > 2; --i) {
-    TObject* obj = fgList->Last();
-    fgList->RemoveLast();
-    delete obj;
-    obj = nullptr;
-  }
+  //   for (int i = fgOpts.size(); i > 2; --i) { FIXME
+  //     CmdLineOption* obj = fgOpts.back();
+  //     fgOpts.pop_back();
+  //     delete obj;
+  //     obj = nullptr;
+  //   }
 
-  fgPositional.clear();
+  //   Options::iterator it = fgOpts.begin();
+  //   while (it != fgOpts.end()) {
+  //     delete it->second;
+  //     ++it;
+  //   }
+
+  fgOpts.clear();
+  fgArgs.clear();
+  fgGreedy.clear();
+  fGreedyPosition = -1;
+  _map_args.clear();
+  _map_opts.clear();
 }
 
-CmdLineOption* CmdLineConfig::Find(const char* name) {
-  if (fgList == 0) return nullptr;
-  TIter it(fgList);
-  CmdLineOption* entry;
-  while ((entry = dynamic_cast<CmdLineOption*>(it()))) {
-    if (entry->fName == name) return entry;
-  }
+CmdLineOption* CmdLineConfig::FindOption(const char* name) {
+  if (0 == fgOpts.size()) return nullptr;
+
+  Options::const_iterator it = fgOpts.find(name);
+  if (fgOpts.end() != it) return it->second;
+
   return nullptr;
 }
 
-void CmdLineConfig::InsertOption(CmdLineOption* opt) {
-  TIter it(fgList);
-  CmdLineOption* entry;
-  while ((entry = dynamic_cast<CmdLineOption*>(it()))) {
+CmdLineArg* CmdLineConfig::FindArgument(const char* name) {
+  if (0 == fgArgs.size()) return nullptr;
+
+  Positional::const_iterator it = fgArgs.find(name);
+  if (fgArgs.end() != it) return it->second;
+
+  return nullptr;
+}
+
+void CmdLineConfig::Insert(CmdLineOption* opt) {
+  Options::const_iterator it = fgOpts.begin();
+
+  while (it != fgOpts.end()) {
+    CmdLineOption* entry = (it++)->second;
+
     if (entry->fName == opt->fName) {
       std::cerr << "CmdLineOption: option '" << opt->fName
                 << "' already exists -> fix it" << std::endl;
@@ -350,21 +401,45 @@ void CmdLineConfig::InsertOption(CmdLineOption* opt) {
       std::cerr << "CmdLineOption: options '" << opt->fName << "' and '"
                 << entry->fName << "' share tag '" << opt->fCmdArg << "'"
                 << std::endl;
+      exit(1);
     }
   }
 
-  fgList->Add(opt);
+  fgOpts[opt->fName] = opt;
+  _map_opts.push_back(opt->fName.Data());
+}
+
+void CmdLineConfig::Insert(CmdLineArg* arg) {
+  if (0 == arg->fName.Length()) {
+    if (fGreedyPosition >= 0) {
+      std::cerr << "Only one greedy parameter allowed." << std::endl;
+      abort();
+    }
+    fGreedyPosition = fgArgs.size();
+    fGreedy = arg;
+    return;
+  }
+
+  Positional::const_iterator it = fgArgs.begin();
+
+  while (it != fgArgs.end()) {
+    CmdLineArg* entry = (it++)->second;
+    if (entry->fName == arg->fName) {
+      std::cerr << "CmdLineOption: argument '" << arg->fName
+                << "' already exists -> fix it" << std::endl;
+      exit(1);
+    }
+  }
+
+  fgArgs.insert(std::pair<std::string, CmdLineArg*>(arg->fName.Data(), arg));
+  _map_args.push_back(arg->fName.Data());
 }
 
 Bool_t CmdLineConfig::CheckCmdLineSpecial(int argc, char** argv, int i) {
   TString option = argv[i];
   if (option == "-h") {
-    std::cout << "Usage: " << argv[0] << " [options]";
-    if (fPosText.Length()) std::cout << " " << fPosText;
-    std::cout << std::endl;
-    std::cout << "  -h                  show this help" << std::endl;
-    PrintHelp();
-    exit(0);
+    PrintHelp(argc, argv);
+    exit(EXIT_SUCCESS);
     return kTRUE;
   } else if (option == "-p") {
     Print();
@@ -385,7 +460,7 @@ Bool_t CmdLineConfig::CheckCmdLineSpecial(int argc, char** argv, int i) {
       if (gSystem->AccessPathName(extra)) {
         std::cout << "Error: extra rc path not accessible (" << extra << ")"
                   << std::endl;
-        exit(0);
+        exit(EXIT_SUCCESS);
       } else {
         void* dirp = gSystem->OpenDirectory(extra);
         if (dirp == 0) {
@@ -412,21 +487,89 @@ Bool_t CmdLineConfig::CheckCmdLineSpecial(int argc, char** argv, int i) {
   return kFALSE;
 }
 
-void CmdLineConfig::PrintHelp() {
-  if (fgList == 0) return;
-  TIter it(fgList);
-  CmdLineOption* entry;
-  while ((entry = dynamic_cast<CmdLineOption*>(it()))) {
-    entry->PrintHelp();
+void CmdLineConfig::PrintHelp(int argc, char** argv) {
+  std::cout << "Usage: ";
+  if (argc and argv)
+    std::cout << argv[0];
+  else
+    std::cout << "this_app";
+  std::cout << " [options]";
+
+  if (fgArgs.size()) {
+    Int_t pos = 0;
+    ListMap::const_iterator ait = _map_args.begin();
+
+    while (ait != _map_args.end()) {
+      if (fGreedyPosition == pos) std::cout << " " << fPosText;
+      std::cout << " " << *ait++;
+      ++pos;
+    }
+    if (pos == fGreedyPosition) std::cout << " " << fPosText;
   }
+  std::cout << std::endl;
+  std::cout << "  -h                  show this help" << std::endl;
+
+  if (0 == fgOpts.size()) return;
+
+  ListMap::const_iterator oit = _map_opts.begin();
+  while (oit != _map_opts.end())
+    fgOpts[*oit++]->PrintHelp();
+
+  ListMap::const_iterator ait = _map_args.begin();
+
+  Int_t pos = 0;
+  while (ait != _map_args.end()) {
+    if (fGreedyPosition == pos)
+      if (fGreedy) fGreedy->PrintHelp(fPosText);
+    fgArgs[*ait++]->PrintHelp();
+    ++pos;
+  }
+
+  if (pos == fGreedyPosition)
+    if (fGreedy) fGreedy->PrintHelp(fPosText);
 }
 
 void CmdLineConfig::Print() {
-  if (fgList == 0) return;
+  if (0 == fgOpts.size()) return;
   std::cout << "Current settings:" << std::endl;
-  TIter it(fgList);
+
+  Options::const_iterator it = fgOpts.begin();
   CmdLineOption* entry;
-  while ((entry = dynamic_cast<CmdLineOption*>(it()))) {
+  while ((entry = (*it++).second)) {
     entry->Print();
+  }
+}
+
+void CmdLineConfig::RestoreDefaults() {
+  instance()->GetEnv();
+
+  Options::const_iterator it = fgOpts.begin();
+
+  while (it != fgOpts.end()) {
+    CmdLineOption* entry = (it++)->second;
+    if (entry->fCmdArg == "") continue;
+
+    switch (entry->fType) {
+      case CmdLineOption::kFlag:
+        CmdLineConfig::instance()->GetEnv()->SetValue("CmdLine." + entry->fName,
+                                                      kFALSE);
+        break;
+      case CmdLineOption::kBool:
+      case CmdLineOption::kInt:
+        CmdLineConfig::instance()->GetEnv()->SetValue("CmdLine." + entry->fName,
+                                                      entry->fDefInt);
+        break;
+      case CmdLineOption::kDouble:
+        CmdLineConfig::instance()->GetEnv()->SetValue("CmdLine." + entry->fName,
+                                                      entry->fDefDouble);
+        break;
+      case CmdLineOption::kString:
+      case CmdLineOption::kStringNotChecked:
+        CmdLineConfig::instance()->GetEnv()->SetValue("CmdLine." + entry->fName,
+                                                      entry->fDefString);
+        break;
+      default:
+        break;
+    }
   }
 }

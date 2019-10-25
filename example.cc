@@ -10,6 +10,10 @@ int main(int argc, char** argv) {
   CmdLineOption string_val("CustomStringArgName", "-string", "Help message",
                            "pi");
 
+  CmdLineArg pos1("name", "name of file", CmdLineArg::kString);
+  CmdLineArg pos_g("", "more files", CmdLineArg::kString);
+  CmdLineArg pos2("trick", "name of trick", CmdLineArg::kString);
+
   CmdLineConfig::SetPositionalText("[...]");
 
   CmdLineConfig* cmdcfg = CmdLineConfig::instance();
@@ -26,10 +30,10 @@ int main(int argc, char** argv) {
             << CmdLineOption::GetStringValue("CustomStringArgName")
             << std::endl;
 
-  PositionalArgs pargs = cmdcfg->GetPositionalArguments();
+  const Positional& pargs = cmdcfg->GetPositionalArguments();
   std::cout << std::endl << "Positional arguments: " << std::endl;
-  for (int i = 0; i < pargs.size(); ++i)
-    std::cout << " " << pargs[i] << std::endl;
+  for (Positional::const_iterator it = pargs.begin(); it != pargs.end(); ++it)
+    std::cout << " " << it->second->GetName() << std::endl;
 
   return 0;
 }

@@ -3,6 +3,7 @@
 #include <CmdLineConfig.hh>
 
 #include <TH1I.h>
+#include <TString.h>
 
 class BasicCase : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(BasicCase);
@@ -22,6 +23,8 @@ private:
   CmdLineOption* int_val;
   CmdLineOption* double_val;
   CmdLineOption* string_val;
+  CmdLineArg* greedy;
+  CmdLineArg* arg1, *arg2;
 
 public:
   virtual void setUp() override {
@@ -33,6 +36,10 @@ public:
                                    "Double Help message", 3.1415);
     string_val =
         new CmdLineOption("StringArg", "-string", "String Help message", "pi");
+
+    if (!arg1) arg1 = new CmdLineArg("arg1", "greedy", CmdLineArg::kString);
+    if (!greedy) greedy = new CmdLineArg("", "greedy", CmdLineArg::kString);
+    if (!arg2) arg2 = new CmdLineArg("arg2", "greedy", CmdLineArg::kString);
   }
   virtual void tearDown() override { CmdLineConfig::instance()->ClearOptions(); }
 
@@ -49,68 +56,68 @@ protected:
     CPPUNIT_ASSERT_EQUAL(std::string("String Help message"),
                          std::string(string_val->GetHelp()));
 
-    CmdLineConfig::instance()->PrintHelp();
+    CmdLineConfig::instance()->PrintHelp(0, nullptr);
   }
 
   void SingleParams() {
     {
-      const char* argv[] = {"./prog"};
+      const char* argv[] = {"./prog", "pos1", "pos2"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
       CPPUNIT_ASSERT_EQUAL(false, CmdLineOption::GetFlagValue("FlagArg"));
     }
 
     {
-      const char* argv[] = {"./prog", "-flag"};
+      const char* argv[] = {"./prog", "-flag", "pos1", "pos2"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
       CPPUNIT_ASSERT_EQUAL(true, CmdLineOption::GetFlagValue("FlagArg"));
     }
 
     {
-      const char* argv[] = {"./prog", "-bool", "1"};
+      const char* argv[] = {"./prog", "-bool", "1", "pos1", "pos2"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
       CPPUNIT_ASSERT_EQUAL(true, CmdLineOption::GetBoolValue("BoolArg"));
     }
 
     {
-      const char* argv[] = {"./prog", "-bool", "0"};
+      const char* argv[] = {"./prog", "-bool", "0", "pos1", "pos2"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
       CPPUNIT_ASSERT_EQUAL(false, CmdLineOption::GetBoolValue("BoolArg"));
     }
 
     {
-      const char* argv[] = {"./prog"};
+      const char* argv[] = {"./prog", "pos1", "pos2"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
       CPPUNIT_ASSERT_EQUAL(13, CmdLineOption::GetIntValue("IntegerArg"));
     }
 
     {
-      const char* argv[] = {"./prog", "-int", "112358"};
+      const char* argv[] = {"./prog", "-int", "112358", "pos1", "pos2"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
       CPPUNIT_ASSERT_EQUAL(112358, CmdLineOption::GetIntValue("IntegerArg"));
     }
 
     {
-      const char* argv[] = {"./prog"};
+      const char* argv[] = {"./prog", "pos1", "pos2"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
       CPPUNIT_ASSERT_EQUAL(3.1415, CmdLineOption::GetDoubleValue("DoubleArg"));
     }
 
     {
-      const char* argv[] = {"./prog", "-double", "2.71"};
+      const char* argv[] = {"./prog", "-double", "2.71", "pos1", "pos2"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
       CPPUNIT_ASSERT_EQUAL(2.71, CmdLineOption::GetDoubleValue("DoubleArg"));
     }
 
     {
-      const char* argv[] = {"./prog"};
+      const char* argv[] = {"./prog", "pos1", "pos2"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
       CPPUNIT_ASSERT_EQUAL(
@@ -119,7 +126,7 @@ protected:
     }
 
     {
-      const char* argv[] = {"./prog", "-string", "test string"};
+      const char* argv[] = {"./prog", "-string", "test string", "pos1", "pos2"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
       CPPUNIT_ASSERT_EQUAL(
@@ -133,11 +140,14 @@ protected:
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
 
-      PositionalArgs pargs = CmdLineConfig::instance()->GetPositionalArguments();
-      CPPUNIT_ASSERT_EQUAL(3, (int)pargs.size());
-      CPPUNIT_ASSERT_EQUAL(TString("positional1"), pargs[0]);
-      CPPUNIT_ASSERT_EQUAL(TString("positional2"), pargs[1]);
-      CPPUNIT_ASSERT_EQUAL(TString("positional3"), pargs[2]);
+      const Positional& pargs = CmdLineConfig::instance()->GetPositionalArguments();
+      CPPUNIT_ASSERT_EQUAL(2, (int)pargs.size());
+      CPPUNIT_ASSERT_EQUAL(TString("positional1"), pargs.at("arg1")->fValue);
+      CPPUNIT_ASSERT_EQUAL(TString("positional3"), pargs.at("arg2")->fValue);
+
+      const Greedy& gargs = CmdLineConfig::instance()->GetGreedyArguments();
+      CPPUNIT_ASSERT_EQUAL(1, (int)gargs.size());
+      CPPUNIT_ASSERT_EQUAL(TString("positional2"), gargs[0]->fValue);
     }
   }
 
@@ -165,11 +175,14 @@ protected:
       CPPUNIT_ASSERT_EQUAL(std::string("test string"),
                            std::string(string_val->GetStringValue()));
 
-      PositionalArgs pargs = CmdLineConfig::instance()->GetPositionalArguments();
-      CPPUNIT_ASSERT_EQUAL(3, (int)pargs.size());
-      CPPUNIT_ASSERT_EQUAL(TString("positional1"), pargs[0]);
-      CPPUNIT_ASSERT_EQUAL(TString("positional2"), pargs[1]);
-      CPPUNIT_ASSERT_EQUAL(TString("positional3"), pargs[2]);
+      const Positional& pargs = CmdLineConfig::instance()->GetPositionalArguments();
+      CPPUNIT_ASSERT_EQUAL(2, (int)pargs.size());
+      CPPUNIT_ASSERT_EQUAL(TString("positional1"), pargs.at("arg1")->fValue);
+      CPPUNIT_ASSERT_EQUAL(TString("positional3"), pargs.at("arg2")->fValue);
+
+      const Greedy& gargs = CmdLineConfig::instance()->GetGreedyArguments();
+      CPPUNIT_ASSERT_EQUAL(1, (int)gargs.size());
+      CPPUNIT_ASSERT_EQUAL(TString("positional2"), gargs[0]->fValue);
     }
 
     {
@@ -188,16 +201,21 @@ protected:
           std::string("test string"),
           std::string(CmdLineOption::GetStringValue("StringArg")));
 
-      PositionalArgs pargs = CmdLineConfig::instance()->GetPositionalArguments();
+      const Positional& pargs = CmdLineConfig::instance()->GetPositionalArguments();
       CPPUNIT_ASSERT_EQUAL(2, (int)pargs.size());
-      CPPUNIT_ASSERT_EQUAL(TString("positional1"), pargs[0]);
-      CPPUNIT_ASSERT_EQUAL(TString("positional3"), pargs[1]);
+      CPPUNIT_ASSERT_EQUAL(TString("positional1"), pargs.at("arg1")->fValue);
+      CPPUNIT_ASSERT_EQUAL(TString("positional3"), pargs.at("arg2")->fValue);
+
+      const Greedy& gargs = CmdLineConfig::instance()->GetGreedyArguments();
+      CPPUNIT_ASSERT_EQUAL(0, (int)gargs.size());
+      CPPUNIT_ASSERT_EQUAL(TString("positional2"), gargs[0]->fValue);
     }
   }
 
   void Values() {
     {
-      const char* argv[] = {"./prog", "-p"};
+      const char* argv[] = {"./prog", "-p", "pos1", "pos2"};
+      CmdLineConfig::instance()->RestoreDefaults();
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
     }
@@ -214,25 +232,25 @@ protected:
     CPPUNIT_ASSERT_EQUAL(false, flag_val->GetBoolValue());
     CPPUNIT_ASSERT_EQUAL(0, flag_val->GetIntValue());
     CPPUNIT_ASSERT_EQUAL(0.0, flag_val->GetDoubleValue());
-    CPPUNIT_ASSERT_EQUAL((char*)nullptr, (char*)flag_val->GetStringValue());
+    CPPUNIT_ASSERT_EQUAL(TString("0"), TString(flag_val->GetStringValue()));
 
     CPPUNIT_ASSERT_EQUAL(false, bool_val->GetFlagValue());
     CPPUNIT_ASSERT_EQUAL(false, bool_val->GetBoolValue());
     CPPUNIT_ASSERT_EQUAL(0, bool_val->GetIntValue());
     CPPUNIT_ASSERT_EQUAL(0.0, bool_val->GetDoubleValue());
-    CPPUNIT_ASSERT_EQUAL((char*)nullptr, (char*)bool_val->GetStringValue());
+    CPPUNIT_ASSERT_EQUAL(TString("0"), TString(bool_val->GetStringValue()));
 
     CPPUNIT_ASSERT_EQUAL(false, int_val->GetFlagValue());
     CPPUNIT_ASSERT_EQUAL(false, int_val->GetBoolValue());
     CPPUNIT_ASSERT_EQUAL(13, int_val->GetIntValue());
-    CPPUNIT_ASSERT_EQUAL(0.0, int_val->GetDoubleValue());
-    CPPUNIT_ASSERT_EQUAL((char*)nullptr, (char*)int_val->GetStringValue());
+    CPPUNIT_ASSERT_EQUAL(13.0, int_val->GetDoubleValue());
+    CPPUNIT_ASSERT_EQUAL(TString("13"), TString(int_val->GetStringValue()));
 
     CPPUNIT_ASSERT_EQUAL(false, double_val->GetFlagValue());
     CPPUNIT_ASSERT_EQUAL(false, double_val->GetBoolValue());
-    CPPUNIT_ASSERT_EQUAL(0, double_val->GetIntValue());
+    CPPUNIT_ASSERT_EQUAL(3, double_val->GetIntValue());
     CPPUNIT_ASSERT_EQUAL(3.1415, double_val->GetDoubleValue());
-    CPPUNIT_ASSERT_EQUAL((char*)nullptr, (char*)double_val->GetStringValue());
+    CPPUNIT_ASSERT_EQUAL(TString("3.1415"), TString(double_val->GetStringValue()));
 
     CPPUNIT_ASSERT_EQUAL(false, string_val->GetFlagValue());
     CPPUNIT_ASSERT_EQUAL(false, string_val->GetBoolValue());
@@ -241,11 +259,18 @@ protected:
     CPPUNIT_ASSERT_EQUAL(std::string("pi"),
                          std::string(string_val->GetStringValue()));
 
-    PositionalArgs pargs = CmdLineConfig::instance()->GetPositionalArguments();
-    CPPUNIT_ASSERT_EQUAL(0, (int)pargs.size());
+      const Positional& pargs = CmdLineConfig::instance()->GetPositionalArguments();
+      CPPUNIT_ASSERT_EQUAL(2, (int)pargs.size());
+      CPPUNIT_ASSERT_EQUAL(TString("pos1"), pargs.at("arg1")->fValue);
+      CPPUNIT_ASSERT_EQUAL(TString("pos2"), pargs.at("arg2")->fValue);
+
+      const Greedy& gargs = CmdLineConfig::instance()->GetGreedyArguments();
+      CPPUNIT_ASSERT_EQUAL(0, (int)gargs.size());
   }
 
   void Defaults() {
+    CmdLineConfig::instance()->RestoreDefaults();
+
     CPPUNIT_ASSERT_EQUAL(false, CmdLineOption::GetDefaultBoolValue("BoolArg"));
     CPPUNIT_ASSERT_EQUAL(13, CmdLineOption::GetDefaultIntValue("IntegerArg"));
     CPPUNIT_ASSERT_EQUAL(3.1415,
@@ -278,8 +303,11 @@ protected:
     CPPUNIT_ASSERT_EQUAL(std::string("pi"),
                          std::string(string_val->GetDefaultStringValue()));
 
-    PositionalArgs pargs = CmdLineConfig::instance()->GetPositionalArguments();
-    CPPUNIT_ASSERT_EQUAL(0, (int)pargs.size());
+    const Positional& pargs = CmdLineConfig::instance()->GetPositionalArguments();
+    CPPUNIT_ASSERT_EQUAL(2, (int)pargs.size());
+
+    const Greedy& gargs = CmdLineConfig::instance()->GetGreedyArguments();
+    CPPUNIT_ASSERT_EQUAL(0, (int)gargs.size());
   }
 
   void Expand() {
@@ -299,7 +327,7 @@ protected:
 
   void Arrays() {
     {
-      const char* argv[] = {"./prog", "-int", "1112358,1234,1248"};
+      const char* argv[] = {"./prog", "-int", "1112358,1234,1248", "pos1", "pos2"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
       CPPUNIT_ASSERT_EQUAL(1112358, CmdLineOption::GetIntValue("IntegerArg"));
@@ -322,7 +350,7 @@ protected:
     }
 
     {
-      const char* argv[] = {"./prog", "-double", "12.71,3.1415 1.137"};
+      const char* argv[] = {"./prog", "-double", "12.71,3.1415 1.137", "pos1", "pos2"};
       CmdLineConfig::instance()->ReadCmdLine(sizeof(argv) / sizeof(char*),
                                              (char**)argv);
       CPPUNIT_ASSERT_EQUAL(12.71, CmdLineOption::GetDoubleValue("DoubleArg"));

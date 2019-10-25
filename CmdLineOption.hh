@@ -38,8 +38,6 @@
 class TList;
 class TEnv;
 
-typedef std::vector<TString> PositionalArgs;
-
 class CmdLineOption : public TObject {
 public:
   enum OptionType {
@@ -111,6 +109,8 @@ public:
 
   void PrintHelp();
   void Print();
+
+  static Bool_t AbortOnWarning;
 
 private:
   CmdLineOption(const char* name);
