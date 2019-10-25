@@ -17,7 +17,7 @@
  *****************************************************************************/
 
 /*!
-  \file   CmdLineOption.hh
+  \file   CmdLineArg.hh
   \brief  Defines options, which can be set by command line, .sorterrc and
           default hard-coded value
 
@@ -27,8 +27,8 @@
   \date   2002-07-29
 */
 
-#ifndef _CMDLINEOPTION_HH
-#define _CMDLINEOPTION_HH
+#ifndef _CMDLINEARG_HH
+#define _CMDLINEARG_HH
 
 #include "TObject.h"
 #include "TString.h"
@@ -38,7 +38,7 @@
 class TList;
 class TEnv;
 
-class CmdLineOption : public TObject {
+class CmdLineArg : public TObject {
 public:
   enum OptionType {
     kNone,
@@ -50,22 +50,14 @@ public:
     kStringNotChecked
   };
 
-  CmdLineOption();
-  CmdLineOption(const char* name, const char* cmd, const char* help,
-                void (*f)() = 0);
-  CmdLineOption(const char* name, const char* cmd, const char* help,
-                Bool_t defval, void (*f)() = 0);
-  CmdLineOption(const char* name, const char* cmd, const char* help,
-                Int_t defval, void (*f)() = 0);
-  CmdLineOption(const char* name, const char* cmd, const char* help,
-                Double_t defval, void (*f)() = 0);
-  CmdLineOption(const char* name, const char* cmd, const char* help,
-                const char* defval, void (*f)() = 0);
+  CmdLineArg();
+  CmdLineArg(const char* name, const char* help, OptionType type,
+             void (*f)() = nullptr, bool greedy = false);
 
-  virtual ~CmdLineOption();
+  virtual ~CmdLineArg();
 
-  CmdLineOption* Expand(TObject* obj);
-  CmdLineOption* Expand(const TString& s1, const TString& s2);
+  CmdLineArg* Expand(TObject* obj);
+  CmdLineArg* Expand(const TString& s1, const TString& s2);
 
   const char* GetHelp() const;
 
@@ -78,15 +70,6 @@ public:
   const Int_t GetArraySize();
   const char* GetStringValue(Bool_t arrayParsing = kFALSE);
 
-  const Bool_t GetDefaultBoolValue() const;
-  const Int_t GetDefaultIntValue() const;
-  const Int_t GetDefaultIntArrayValue(const Int_t index) const;
-
-  const Double_t GetDefaultDoubleValue() const;
-  const Double_t GetDefaultDoubleArrayValue(const Int_t index) const;
-  const Int_t GetDefaultArraySize() const;
-  const char* GetDefaultStringValue(Bool_t arrayParsing = kFALSE) const;
-
   static const Bool_t GetFlagValue(const char* name);
   static const Bool_t GetBoolValue(const char* name);
   static const Int_t GetIntValue(const char* name);
@@ -97,30 +80,14 @@ public:
   static const Int_t GetArraySize(const char* name);
   static const char* GetStringValue(const char* name);
 
-  static const Bool_t GetDefaultBoolValue(const char* name);
-  static const Int_t GetDefaultIntValue(const char* name);
-  static const Int_t GetDefaultIntArrayValue(const char* name,
-                                             const Int_t index);
-  static const Double_t GetDefaultDoubleValue(const char* name);
-  static const Double_t GetDefaultDoubleArrayValue(const char* name,
-                                                   const Int_t index);
-  static const Int_t GetDefaultArraySize(const char* name);
-  static const char* GetDefaultStringValue(const char* name);
-
-  void PrintHelp();
+  void PrintHelp(const char* placeholder = nullptr);
   void Print();
 
-  static Bool_t AbortOnWarning;
-
 private:
-  CmdLineOption(const char* name);
-  CmdLineOption(const char* name, Bool_t defval);
-  CmdLineOption(const char* name, Int_t defval);
-  CmdLineOption(const char* name, Double_t defval);
-  CmdLineOption(const char* name, const char* defval);
-  CmdLineOption(const CmdLineOption& ref); // LCOV_EXCL_LINE
+  CmdLineArg(const char* name, OptionType type);
+  CmdLineArg(const CmdLineArg& ref); // LCOV_EXCL_LINE
 
-  void Init(const char* name, const char* cmd, const char* help);
+  void Init(const char* name, const char* help, bool greedy = false);
   Int_t GetValue(const char* name, Int_t def) const;
   Double_t GetValue(const char* name, Double_t def) const;
   const char* GetValue(const char* name, const char* def) const;
@@ -131,13 +98,12 @@ private:
   static const Double_t GetDoubleArrayValueFromString(const TString arraystring,
                                                       const Int_t index);
   static const Int_t GetArraySizeFromString(const TString arraystring);
-  TString fName;   // name used in .sorterrc
-  TString fCmdArg; // name for command line
-  TString fHelp;   // help text
 
-  Int_t fDefInt; // default values;
-  Double_t fDefDouble;
-  TString fDefString;
+public:
+  TString fName; // name used in .sorterrc
+  TString fHelp; // help text
+  TString fValue;
+
   OptionType fType;
 
   void (*fFunction)(); // function to be called when changed
@@ -146,7 +112,7 @@ private:
 
   friend class CmdLineConfig;
 
-  ClassDef(CmdLineOption, 0); // LCOV_EXCL_LINE
+  ClassDef(CmdLineArg, 0); // LCOV_EXCL_LINE
 };
 
 #endif

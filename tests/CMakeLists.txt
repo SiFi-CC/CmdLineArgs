@@ -6,10 +6,10 @@ endif()
 
 file(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*_tests.cpp" )
 
-link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib)
+link_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(UnitTester test_runner.cpp ${UnitTests_SRCS})
-target_link_libraries(UnitTester CmdLineArgs ${CPPUNIT_LIBRARIES})
+target_link_libraries(UnitTester ${CPPUNIT_LIBRARIES} CmdLineArgs)
 
 foreach(test ${UnitTests_SRCS})
     file(READ ${test} test_file)

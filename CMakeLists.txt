@@ -50,6 +50,7 @@ add_executable(example example.cc)
 target_link_libraries(example
     CmdLineArgs)
 
+link_directories(${CMAKE_CURRENT_BINARY_DIR})
 enable_testing()
 add_subdirectory(tests)
 

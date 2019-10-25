@@ -29,14 +29,21 @@
 #ifndef _CMDLINECONFIG_HH
 #define _CMDLINECONFIG_HH
 
+#include <list>
+#include <map>
+
 #include <TString.h>
 #include <TSystem.h>
 
+#include "CmdLineArg.hh"
 #include "CmdLineOption.hh"
 
 class TEnv;
 
 enum ParameterSource { kSql, kFile, kImportExport, kFileImport };
+
+typedef std::map<std::string, CmdLineArg*> Positional;
+typedef std::vector<CmdLineArg*> Greedy;
 
 class CmdLineConfig {
 protected:
@@ -64,32 +71,49 @@ public:
   static const TString GetResource(const char* path, const char* file,
                                    EAccessMode mode = kFileExists);
 
-  static const PositionalArgs& GetPositionalArguments() { return fgPositional; }
   static const void SetPositionalText(const TString& text) { fPosText = text; }
+  static const Positional& GetPositionalArguments() { return fgArgs; }
+  static const Greedy& GetGreedyArguments() { return fgGreedy; }
 
   TEnv* GetEnv();
   static void ClearOptions();
-  static CmdLineOption* Find(const char* name);
+  static void RestoreDefaults();
+  static CmdLineOption* FindOption(const char* name);
+  static CmdLineArg* FindArgument(const char* name);
   static Bool_t CheckCmdLineSpecial(int argc, char** argv, int i);
-  static void PrintHelp();
+  static void PrintHelp(int argc, char** argv);
   static void Print();
 
 protected:
   friend CmdLineOption::~CmdLineOption();
   friend void CmdLineOption::Init(const char* name, const char* cmd,
                                   const char* help);
-  void InsertOption(CmdLineOption* opt);
-  void RemoveOption(CmdLineOption* opt) { fgList->Remove(opt); }
+
+  friend CmdLineArg::~CmdLineArg();
+  friend void CmdLineArg::Init(const char* name, const char* help, bool greedy);
+
+  void Insert(CmdLineOption* opt);
+  void Remove(CmdLineOption* opt) { fgOpts.erase(opt->fName); }
+
+  void Insert(CmdLineArg* opt);
+  void Remove(CmdLineArg* opt) { fgArgs.erase(opt->fName.Data()); }
 
 private:
   static CmdLineConfig* inst;
   static TEnv* fgEnv; // general environment
   TString name;
 
-  static TList* fgList;               // list of command line options
-  static PositionalArgs fgPositional; // list of positional arguments
+  typedef std::map<TString, CmdLineOption*> Options;
+  static Options fgOpts;      // list of command line options
+  static Positional fgArgs;   // list of command line arguments
+  static Greedy fgGreedy;     // list of command line greedy arguments
+  static CmdLineArg* fGreedy; // greedy argument reference
+  static Int_t fGreedyPosition;
 
   static TString fPosText;
+
+  typedef std::list<std::string> ListMap;
+  static ListMap _map_opts, _map_args;
 
   ClassDef(CmdLineConfig, 0); // LCOV_EXCL_LINE
 };
