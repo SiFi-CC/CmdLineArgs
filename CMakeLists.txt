@@ -1,14 +1,11 @@
-cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
-project(CmdLineArgs CXX)
-string(TOUPPER "${PROJECT_NAME}" CAPS_PROJECT_NAME)
+cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+project(CmdLineArgs
+     VERSION 2.2.0
+     LANGUAGES CXX
+)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
-
-set (VERSION_MAJOR 2)
-set (VERSION_MINOR 1)
-set (VERSION_PATCH 0)
-set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
 #--- You need to tell CMake where to find the ROOT installation.
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
@@ -20,15 +17,11 @@ list(APPEND CMAKE_MODULE_PATH
 
 #---Locate the ROOT package and defines a number of variables (e.g. ROOT_INCLUDE_DIRS)
 find_package(ROOT REQUIRED COMPONENTS Core)
-set(ROOTSYS $ENV{ROOTSYS})
-
-include(${ROOT_USE_FILE})
-include_directories(${ROOT_INCLUDE_DIRS})
 
 include(GNUInstallDirs)
 
-file(GLOB cmdlineargs_SRCS "Cmd*.cc")
-file(GLOB cmdlineargs_HDRS "Cmd*.hh")
+file(GLOB cmdlineargs_SRCS CmdLineArg.cc CmdLineConfig.cc CmdLineOption.cc)
+file(GLOB cmdlineargs_HDRS CmdLineArg.hh CmdLineConfig.hh CmdLineOption.hh)
 
 include(c++-standards)
 include(code-coverage)
@@ -41,36 +34,33 @@ ROOT_GENERATE_DICTIONARY(G__cmdlineargs_cc ${cmdlineargs_HDRS} LINKDEF LinkDef.h
 
 add_library(CmdLineArgs SHARED ${cmdlineargs_SRCS} G__cmdlineargs_cc)
 target_link_libraries(CmdLineArgs
-    ${ROOT_LIBRARIES}
+    ROOT::Hist
 )
 
-include_directories(BEFORE ${CMAKE_SOURCE_DIR})
+add_library(SiFi::CmdLineArgs ALIAS CmdLineArgs)
 
-add_executable(example example.cc)
-target_link_libraries(example
-    CmdLineArgs)
+#include_directories(BEFORE ${CMAKE_SOURCE_DIR})
 
-link_directories(${CMAKE_CURRENT_BINARY_DIR})
-enable_testing()
-add_subdirectory(tests)
-
-target_include_directories(CmdLineArgs PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
+target_include_directories(CmdLineArgs
+    PUBLIC
+        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
-set_target_properties(CmdLineArgs PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    SOVERSION ${VERSION_MAJOR}
-    PUBLIC_HEADER "${cmdlineargs_HDRS}"
-    INTERFACE_${CMAKE_PROJECT_NAME}_MAJOR_VERSION ${VERSION_MAJOR}
+set_target_properties(CmdLineArgs
+    PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+        PUBLIC_HEADER "${cmdlineargs_HDRS}"
+        INTERFACE_${CMAKE_PROJECT_NAME}_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
 )
 
 set_property(TARGET CmdLineArgs APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING ${CMAKE_PROJECT_NAME}_MAJOR_VERSION
 )
 
-install(TARGETS CmdLineArgs EXPORT ${CMAKE_PROJECT_NAME}Targets
+install(TARGETS CmdLineArgs
+    EXPORT ${CMAKE_PROJECT_NAME}Targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -78,6 +68,17 @@ install(TARGETS CmdLineArgs EXPORT ${CMAKE_PROJECT_NAME}Targets
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
+
+add_executable(example example.cc)
+target_link_libraries(example
+    CmdLineArgs)
+
+option(ENABLE_TESTING "Build tests" ON)
+
+if(ENABLE_TESTING)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
 # Export the package for use from the build-tree
 # (this registers the build-tree with a global CMake-registry)
@@ -91,33 +92,36 @@ else()
 endif()
 set(CMAKE_INSTALL_CMAKEDIR ${DEF_CMAKE_INSTALL_CMAKEDIR} CACHE PATH "Installation directory for CMake files")
 
+
+
 # packaging
-
-include(CMakePackageConfigHelpers)
-
-write_basic_package_version_file(
-    ${CMAKE_PROJECT_NAME}ConfigVersion.cmake
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion)
-
-export(EXPORT ${CMAKE_PROJECT_NAME}Targets
-    FILE ${CMAKE_PROJECT_NAME}/${CMAKE_PROJECT_NAME}Targets.cmake
-)
-configure_file(
-    cmake/${CMAKE_PROJECT_NAME}Config.cmake
-    ${CMAKE_PROJECT_NAME}Config.cmake
-    COPYONLY
-)
+export(PACKAGE ${CMAKE_PROJECT_NAME})
 
 install(EXPORT ${CMAKE_PROJECT_NAME}Targets
     FILE ${CMAKE_PROJECT_NAME}Targets.cmake
     DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
 )
 
+install(EXPORT ${CMAKE_PROJECT_NAME}Targets
+    FILE ${CMAKE_PROJECT_NAME}Targets.cmake
+    NAMESPACE SiFi::
+    DESTINATION ${CMAKE_INSTALL_CMAKEDIR} COMPONENT dev
+)
+
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(Config.cmake.in ${CMAKE_PROJECT_NAME}Config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+    PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR CMAKE_INSTALL_BINDIR)
+
+write_basic_package_version_file(
+    ${CMAKE_PROJECT_NAME}ConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
+
 install(
     FILES
         ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake
         ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}ConfigVersion.cmake
     DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
-    COMPONENT Devel
 )
