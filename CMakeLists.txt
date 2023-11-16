@@ -17,6 +17,8 @@ list(APPEND CMAKE_MODULE_PATH
 
 #---Locate the ROOT package and defines a number of variables (e.g. ROOT_INCLUDE_DIRS)
 find_package(ROOT REQUIRED COMPONENTS Core)
+include(${ROOT_USE_FILE})
+include_directories(${ROOT_INCLUDE_DIRS})
 
 include(GNUInstallDirs)
 
@@ -30,9 +32,11 @@ include(sanitizers)
 cxx_17()
 add_code_coverage()
 
-ROOT_GENERATE_DICTIONARY(G__cmdlineargs_cc ${cmdlineargs_HDRS} LINKDEF LinkDef.h)
+set(ROOTDICTNAME "cmdlineargs_cc")
 
-add_library(CmdLineArgs SHARED ${cmdlineargs_SRCS} G__cmdlineargs_cc)
+ROOT_GENERATE_DICTIONARY(G__${ROOTDICTNAME} ${cmdlineargs_HDRS} LINKDEF LinkDef.h)
+
+add_library(CmdLineArgs SHARED ${cmdlineargs_SRCS} G__${ROOTDICTNAME})
 target_link_libraries(CmdLineArgs
     ROOT::Hist
 )
@@ -124,4 +128,11 @@ install(
         ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake
         ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}ConfigVersion.cmake
     DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+)
+
+install(FILES
+		${CMAKE_BINARY_DIR}/lib${ROOTDICTNAME}_rdict.pcm
+		${CMAKE_BINARY_DIR}/lib${ROOTDICTNAME}.rootmap
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    COMPONENT libraries
 )
